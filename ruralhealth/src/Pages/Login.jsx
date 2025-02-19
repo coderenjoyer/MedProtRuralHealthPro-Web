@@ -125,7 +125,6 @@ const RuralHealthLogin = () => {
       } else {
         setError("Invalid user type or password.");
       }
-
     } catch (err) {
       setError("Login failed. Please try again.");
     } finally {
