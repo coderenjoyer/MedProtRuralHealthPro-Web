@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "../../Components/AdminComp/DoctorComp/docsidebar";
 import MainContentList from "../../Pages/DoctorPages/Maincontent";
 import MainContentPatient from "../../Pages/DoctorPages/Maincontpatient";
-import MClistappointment from "../../Components/AdminComp/DoctorComp/appolist";
-import MCappointment from "../../Components/AdminComp/DoctorComp/appointmentcomp";
-import MCcalendar from "../../Components/AdminComp/DoctorComp/appocalendar";
+import MClistappointment from "../../Components/AdminComp/DoctorComp/doclistapp";
+import MCappointment from "../../Components/AdminComp/DoctorComp/docappo";
+import MCcalendar from "../../Components/AdminComp/DoctorComp/doccalendar";
 import styled from "styled-components";
 
 const Wrapper = styled.div`
