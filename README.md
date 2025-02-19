@@ -6,5 +6,6 @@
 - npm install react-router-dom
 https://medium.com/@navanitvishwakarma790/mastering-react-router-dom-with-vite-an-optimized-guide-08e870cce6e2
 //router tutorial
+- npm i lucide-react
 
 for lorenz na samok kaayu  - npm install @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/interaction @fullcalendar/list
