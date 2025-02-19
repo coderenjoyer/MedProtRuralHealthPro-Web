@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Admin from "./Pages/Admin"; // Create this component for the /admin route
-import Login from "./Pages/Login"; // Create this component for the / route
+import Admin from "./Pages/AdminPages/Admin"; 
+import Login from "./Pages/Features/Login"; 
+import Doctor from "./Pages/DoctorPages/Doctor";
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/doctor" element={<Doctor />} />
       </Routes>
     </Router>
   );
