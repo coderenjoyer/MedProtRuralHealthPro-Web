@@ -9,3 +9,4 @@ https://medium.com/@navanitvishwakarma790/mastering-react-router-dom-with-vite-a
 - npm i lucide-react
 
 for lorenz na samok kaayu  - npm install @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/interaction @fullcalendar/list
+- npm i framer-motion
