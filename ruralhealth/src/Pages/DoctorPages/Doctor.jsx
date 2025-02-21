@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Sidebar from "../../Components/AdminComp/DoctorComp/docsidebar";
+import Sidebar from "../../Components/DoctorComp/docsidebar";
 import MainContentList from "../../Pages/DoctorPages/Maincontent";
 import MainContentPatient from "../../Pages/DoctorPages/Maincontpatient";
-import MClistappointment from "../../Components/AdminComp/DoctorComp/doclistapp";
-import MCappointment from "../../Components/AdminComp/DoctorComp/docappo";
-import MCcalendar from "../../Components/AdminComp/DoctorComp/doccalendar";
+import MClistappointment from "../../Components/DoctorComp/doclistapp";
+import MCappointment from "../../Components/DoctorComp/docappo";
+import MCcalendar from "../../Components/DoctorComp/doccalendar";
 import styled from "styled-components";
 
 const Wrapper = styled.div`

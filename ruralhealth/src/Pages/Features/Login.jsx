@@ -126,6 +126,12 @@ const RuralHealthLogin = () => {
         setError("Invalid user type or password.");
       }
 
+      if (userType === "Staff-FrontDesk" && password === "desk123") {
+        navigate("/registration"); // Redirect to /admin using useNavigate
+      } else {
+        setError("Invalid user type or password.");
+      }
+
     } catch (err) {
       setError("Login failed. Please try again.");
     } finally {
