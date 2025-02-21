@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate from react-router-dom
+import { useNavigate } from "react-router-dom"; 
 import styled from "styled-components";
 
 const Container = styled.div`
@@ -102,16 +102,16 @@ const RuralHealthLogin = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate(); // useNavigate hook for redirection
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // Simulate a login request
+  
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate async operation
+      await new Promise((resolve) => setTimeout(resolve, 1000)); 
 
       
       if (userType === "Staff-Admin" && password === "admin123") {
