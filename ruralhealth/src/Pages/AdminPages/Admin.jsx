@@ -1,4 +1,4 @@
-"use client"
+
 import styled from "styled-components"
 import Sidebar from "../../Components/AdminComp/Sidebar"
 import PatientTable from "../../Components/AdminComp/PatientTable"

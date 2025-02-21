@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import '../../styles/doc'
+import '../../styles/doc.css'
 import React, { useState } from 'react';
 import Sidebar from '../../Components/PatRegisComp/PatSidebar'; // sidebar
 import PatientRegistry from '../../Components/PatRegisComp/PatRegistry'; // patregistry

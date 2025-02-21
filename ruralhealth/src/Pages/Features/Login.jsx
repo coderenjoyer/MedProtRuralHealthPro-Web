@@ -113,21 +113,21 @@ const RuralHealthLogin = () => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate async operation
 
-      // Check if the user is "Staff-Admin" and password is "admin123"
+      
       if (userType === "Staff-Admin" && password === "admin123") {
-        navigate("/admin"); // Redirect to /admin using useNavigate
+        navigate("/admin"); 
       } else {
         setError("Invalid user type or password.");
       }
 
       if (userType === "Doctor-Physician" && password === "doctor123") {
-        navigate("/doctor"); // Redirect to /admin using useNavigate
+        navigate("/doctor"); 
       } else {
         setError("Invalid user type or password.");
       }
 
       if (userType === "Staff-FrontDesk" && password === "desk123") {
-        navigate("/registration"); // Redirect to /admin using useNavigate
+        navigate("/registration"); 
       } else {
         setError("Invalid user type or password.");
       }
