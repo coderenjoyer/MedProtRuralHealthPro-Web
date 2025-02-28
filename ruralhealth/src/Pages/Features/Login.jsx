@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom"; // Import useNavigate from react-router-dom
 import styled from "styled-components";
 
 const Container = styled.div`
@@ -102,7 +102,7 @@ const RuralHealthLogin = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // useNavigate hook for redirection
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -111,9 +111,9 @@ const RuralHealthLogin = () => {
 
   
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); 
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate async operation
 
-      
+     
       if (userType === "Staff-Admin" && password === "admin123") {
         navigate("/admin"); 
       } else {
@@ -121,13 +121,19 @@ const RuralHealthLogin = () => {
       }
 
       if (userType === "Doctor-Physician" && password === "doctor123") {
-        navigate("/doctor"); 
+        navigate("/doctor");
       } else {
         setError("Invalid user type or password.");
       }
 
       if (userType === "Staff-FrontDesk" && password === "desk123") {
-        navigate("/registration"); 
+        navigate("/front");
+      } else {
+        setError("Invalid user type or password.");
+      }
+
+      if (userType === "Specialist-Dentist" && password === "spec123") {
+        navigate("/spec");
       } else {
         setError("Invalid user type or password.");
       }

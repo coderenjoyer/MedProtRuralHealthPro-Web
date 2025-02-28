@@ -2,7 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Admin from "./Pages/AdminPages/Admin"; 
 import Login from "./Pages/Features/Login"; 
 import Doctor from "./Pages/DoctorPages/Doctor";
-import Regis from "./Pages/PatregisPages/Patregis"
+import Front from "./Pages/PatregisPages/Patregis"
+import Specialist from "./Pages/SpecialistPages/Specialist"
 
 function App() {
   return (
@@ -11,7 +12,8 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/doctor" element={<Doctor />} />
-        <Route path="/registration" element={<Regis />} />
+        <Route path="/front" element={<Front />} />
+        <Route path="/spec" element={<Specialist />} />
       </Routes>
     </Router>
   );

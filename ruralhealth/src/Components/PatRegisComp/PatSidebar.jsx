@@ -58,7 +58,7 @@ function Sidebar({ selectedMenu, setSelectedMenu }) {
                 <button 
                     className="sidebar-button logout-button" 
                     title="Logout"
-                    onClick={() => navigate('/')} // Navigate to home page on logout
+                    onClick={() => navigate('/')} 
                 >
                     <LogOut size={iconSize} />
                     {!isCollapsed && <span>Logout</span>}
