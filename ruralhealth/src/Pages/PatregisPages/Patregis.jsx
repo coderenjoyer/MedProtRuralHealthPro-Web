@@ -41,3 +41,5 @@ createRoot(document.getElementById('root')).render(
     <Main />
   </StrictMode>,
 )
+
+export default Main;
