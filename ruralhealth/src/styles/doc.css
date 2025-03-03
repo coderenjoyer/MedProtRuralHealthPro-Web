@@ -553,6 +553,7 @@
       flex: 1;
       border: 1px solid #ddd;
       padding: 20px;
+      width: 525px;
   }
   
   /* Replace upload-circle with static profile-circle */
@@ -601,6 +602,9 @@
       height: calc(100vh - 40px); /* Full viewport height minus padding */
       display: flex;
       gap: 20px;
+      overflow-x: auto; /* Allows horizontal scrolling if needed */
+      width: 120%; /* Set to 1.2x the page width */
+      margin-left: 1px; /* Move to the right by 200px */
   }
   
   .medicine-management {
@@ -613,6 +617,7 @@
       height: 100%; /* Takes full height of parent */
       display: flex;
       flex-direction: column;
+      width: 35%; /* 35% * 1.5 */
   }
   
   .header-section {
@@ -715,7 +720,9 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
+      width: 570px !important;
       height: 100%;
+      /*width: 10%; /* Decreased from 63% */
   }
   
   .search-section {
