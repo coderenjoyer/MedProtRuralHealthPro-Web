@@ -3,6 +3,7 @@ import styled from "styled-components"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom" 
 import { Stethoscope, Calendar, LogOut, User } from "lucide-react"
+import Appo from "../../Components/PatRegisComp/PatAppo"
 
 const SidebarContainer = styled.aside`
   width: 240px;
@@ -147,8 +148,8 @@ const Sidebar = ({ setActiveView, activeView }) => {
         </NavItem>
 
         <NavItem
-          active={activeView === "appointments"}
-          onClick={() => setActiveView("appointments")}
+          active={window.location.pathname === "/appointments"} // Ensure active state is correct
+          onClick={() => navigate("/appointments")} // Navigate to /appointments
           whileTap={{ scale: 0.95 }}
         >
           <IconWrapper>

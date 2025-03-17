@@ -31,7 +31,7 @@ const Logo = styled.img`
 `;
 
 const Title = styled.h2`
-  margin-top: -35px;
+  margin-top: -5px;
   font-size: 25px;
   color: black;
   margin-bottom: 5px;
@@ -71,7 +71,10 @@ const Input = styled.input`
   border-radius: 5px;
   border: 1px solid #ccc;
   background-color: #f9f9f9;
+  display: block; 
+  margin: 0 auto;
 `;
+
 
 const LoginButton = styled.button`
   width: 100%;
@@ -82,14 +85,21 @@ const LoginButton = styled.button`
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
   &:hover {
     background-color: #00BCD4;
   }
+  
   &:disabled {
     background-color: #ccc;
     cursor: not-allowed;
   }
 `;
+
 
 const ErrorMessage = styled.div`
   color: red;
@@ -153,7 +163,7 @@ const RuralHealthLogin = () => {
     <Container>
       <LoginBox>
         <LogoSection>
-          <Logo src="/RHnobg.png" alt="Rural Health Logo" />
+          <Logo src="/RH.png" alt="Rural Health Logo" />
         </LogoSection>
         <Title>SIGN IN</Title>
         <form onSubmit={handleLogin}>

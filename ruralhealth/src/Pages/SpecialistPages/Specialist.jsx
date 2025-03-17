@@ -40,19 +40,6 @@ function App() {
                 <PatientRegistry />
               </motion.div>
             )}
-            {activeView === "diagnosis" && (
-              <motion.div
-                key="diagnosis"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                style={{ height: "100%" }}
-              >
-                <h2>Dental Diagnosis</h2>
-                <p>Diagnosis tools and information will be displayed here.</p>
-              </motion.div>
-            )}
             {activeView === "appointments" && (
               <motion.div
                 key="appointments"

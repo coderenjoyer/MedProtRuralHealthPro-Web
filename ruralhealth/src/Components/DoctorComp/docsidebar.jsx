@@ -159,8 +159,8 @@ const Sidebar = ({ isOpen, toggleSidebar, selectedButton, setSelectedButton }) =
   };
 
   const handleLogout = () => {
-    // Perform any necessary logout logic here (e.g., clearing session storage, state reset)
-    navigate("/"); // Redirect to the home page
+    
+    navigate("/");
   };
 
   return (

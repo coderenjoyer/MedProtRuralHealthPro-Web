@@ -8,7 +8,7 @@ const TableWrapper = styled.div`
 
 const Table = styled.table`
   width: 100%;
-  min-width: 1000px; // Ensures table doesn't get too squeezed
+  min-width: 1000px;  
   border-collapse: collapse;
   background: white;
   border-radius: 4px;
