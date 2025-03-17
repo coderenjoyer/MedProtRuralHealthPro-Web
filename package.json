@@ -6,6 +6,7 @@
     "@fullcalendar/react": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "date-fns": "^4.1.0",
+    "firebase": "^11.4.0",
     "framer-motion": "^12.4.7",
     "lucide-react": "^0.475.0",
     "react-calendar": "^5.1.0",

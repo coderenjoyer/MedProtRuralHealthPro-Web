@@ -52,7 +52,8 @@ const NavMenu = styled.nav`
   padding: 20px 0;
   display: flex;
   flex-direction: column;
-  height: calc(100% - 200px);
+  height: calc(100vh - 200px);
+  position: relative;
 `
 
 const NavItem = styled.a`
@@ -79,9 +80,13 @@ const LogoutItem = styled.div`
   color: white;
   text-decoration: none;
   transition: background-color 0.3s;
-  margin-top: auto;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
+  background-color: #004b87;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.1);

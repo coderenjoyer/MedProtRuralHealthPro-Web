@@ -21,9 +21,6 @@ function Sidebar({ selectedMenu, setSelectedMenu }) {
             </button>
             
             <div className="logo-container">
-                <div className="profile-circle">
-                    <img src="/placeholder.jpg" alt="Profile" className="profile-image" />
-                </div>
                 {!isCollapsed && <div className="logo-text">Front Desk</div>}
             </div>
 

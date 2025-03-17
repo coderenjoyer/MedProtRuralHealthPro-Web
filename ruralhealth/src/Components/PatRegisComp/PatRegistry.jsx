@@ -1,16 +1,34 @@
-import React from 'react';
-import PatientInformation from '../PatRegisComp/PatInfo';
-import PatientSearch from '../PatRegisComp/PatSearch';
+import React, { useState } from 'react';
+import PatientInformation from './PatInfo';
+import PatientSearch from './PatSearch';
 
-function PatientRegistry() {
-    console.log('PatientRegistry component rendered');
+function PatRegistry() {
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
+
+    const handleRegister = (patientId) => {
+        setSuccess(`Patient registered successfully with ID: ${patientId}`);
+        setError(null);
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccess(null), 5000);
+    };
+
+    const handleError = (errorMessage) => {
+        setError(errorMessage);
+        setSuccess(null);
+        // Clear error message after 5 seconds
+        setTimeout(() => setError(null), 5000);
+    };
+
     return (
-        <div className="patient-registry-container">
-            <h1 className="registry-title">Patient Registry</h1>
-            <div className="registry-content">
-                <PatientInformation />
-                <PatientSearch />
+        <div className="pat-registry">
+            <div className="pat-registry-header">
+                <h1>Patient Registry</h1>
+                {error && <div className="error-message">{error}</div>}
+                {success && <div className="success-message">{success}</div>}
             </div>
+            <PatientInformation onRegister={handleRegister} onError={handleError} />
+            <PatientSearch />
             <div className="bottom-buttons">
                 <div className="left-buttons">
                     <button className="delete-btn">Delete</button>
@@ -18,11 +36,10 @@ function PatientRegistry() {
                 </div>
                 <div className="right-buttons">
                     <button className="clear-btn">Clear</button>
-                    <button className="register-btn">Register</button>
                 </div>
             </div>
         </div>
     );
 }
 
-export default PatientRegistry;
+export default PatRegistry;
