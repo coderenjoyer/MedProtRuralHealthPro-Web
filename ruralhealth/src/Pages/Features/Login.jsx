@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
+import { rhp } from "../../Firebase/firebase";
+import { get, child } from "firebase/database";
 import styled from "styled-components";
 
 const Container = styled.div`
@@ -31,7 +33,7 @@ const Logo = styled.img`
 `;
 
 const Title = styled.h2`
-  margin-top: -35px;
+  margin-top: -5px;
   font-size: 25px;
   color: black;
   margin-bottom: 5px;
@@ -71,7 +73,10 @@ const Input = styled.input`
   border-radius: 5px;
   border: 1px solid #ccc;
   background-color: #f9f9f9;
+  display: block; 
+  margin: 0 auto;
 `;
+
 
 const LoginButton = styled.button`
   width: 100%;
@@ -82,14 +87,21 @@ const LoginButton = styled.button`
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
   &:hover {
     background-color: #00BCD4;
   }
+  
   &:disabled {
     background-color: #ccc;
     cursor: not-allowed;
   }
 `;
+
 
 const ErrorMessage = styled.div`
   color: red;
@@ -109,45 +121,50 @@ const RuralHealthLogin = () => {
     setLoading(true);
     setError("");
 
-  
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); 
-
+      // Check user credentials in Firebase
+      const userRef = child(rhp, `users/${userType}`);
+      const snapshot = await get(userRef);
       
-      if (userType === "Staff-Admin" && password === "admin123") {
-        navigate("/admin"); 
+      if (snapshot.exists()) {
+        const userData = snapshot.val();
+        if (userData.password === password) {
+          // Navigate based on user type
+          switch (userType) {
+            case "Staff-Admin":
+              navigate("/admin");
+              break;
+            case "Doctor-Physician":
+              navigate("/doctor");
+              break;
+            case "Staff-FrontDesk":
+              navigate("/front");
+              break;
+            case "Specialist-Dentist":
+              navigate("/spec");
+              break;
+            default:
+              setError("Invalid user type.");
+          }
+        } else {
+          setError("Invalid password.");
+        }
       } else {
-        setError("Invalid user type or password.");
+        setError("User not found.");
       }
-
-      if (userType === "Doctor-Physician" && password === "doctor123") {
-        navigate("/doctor"); 
-      } else {
-        setError("Invalid user type or password.");
-      }
-
-      if (userType === "Staff-FrontDesk" && password === "desk123") {
-        navigate("/registration"); 
-      } else {
-        setError("Invalid user type or password.");
-      }
-
     } catch (err) {
       setError("Login failed. Please try again.");
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }
-
-    
-
-    
   };
 
   return (
     <Container>
       <LoginBox>
         <LogoSection>
-          <Logo src="/RHnobg.png" alt="Rural Health Logo" />
+          <Logo src="/RH.png" alt="Rural Health Logo" />
         </LogoSection>
         <Title>SIGN IN</Title>
         <form onSubmit={handleLogin}>

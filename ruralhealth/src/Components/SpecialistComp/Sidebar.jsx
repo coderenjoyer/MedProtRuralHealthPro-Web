@@ -1,0 +1,174 @@
+"use client"
+import styled from "styled-components"
+import { motion } from "framer-motion"
+import { useNavigate } from "react-router-dom" 
+import { Stethoscope, Calendar, LogOut, User } from "lucide-react"
+import Appo from "../../Components/PatRegisComp/PatAppo"
+
+const SidebarContainer = styled.aside`
+  width: 240px;
+  background: linear-gradient(180deg, ${({ theme }) => theme.colors.primary} 0%, ${({ theme }) => theme.colors.primaryDark} 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: ${({ theme }) => theme.shadows.lg};
+  z-index: 10;
+`
+
+const Logo = styled.div`
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+`
+
+const LogoIcon = styled.div`
+  width: 80px;
+  height: 80px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+`
+
+const LogoText = styled.h1`
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+`
+
+const NavItems = styled.nav`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 0;
+`
+
+const NavItem = styled(motion.button)`
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  ${({ active, theme }) =>
+    active &&
+    `
+    background-color: rgba(255, 255, 255, 0.15);
+    font-weight: 600;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 4px;
+      background-color: ${theme.colors.white};
+    }
+  `}
+`
+
+const IconWrapper = styled.span`
+  margin-right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`
+
+const Footer = styled.div`
+  padding: 1rem 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+`
+
+const LogoutButton = styled(motion.button)`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+`
+
+const Sidebar = ({ setActiveView, activeView }) => {
+  const navigate = useNavigate() // Initialize useNavigate
+
+  return (
+    <SidebarContainer>
+      <Logo>
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.5, type: "spring" }}>
+          <LogoIcon>
+            <User size={40} />
+          </LogoIcon>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          <LogoText>DENTIST</LogoText>
+        </motion.div>
+      </Logo>
+
+      <NavItems>
+        <NavItem
+          active={activeView === "examination"}
+          onClick={() => setActiveView("examination")}
+          whileTap={{ scale: 0.95 }}
+        >
+          <IconWrapper>
+            <User size={20} />
+          </IconWrapper>
+          Dental Examination
+        </NavItem>
+
+        <NavItem
+          active={window.location.pathname === "/appointments"} // Ensure active state is correct
+          onClick={() => navigate("/appointments")} // Navigate to /appointments
+          whileTap={{ scale: 0.95 }}
+        >
+          <IconWrapper>
+            <Calendar size={20} />
+          </IconWrapper>
+          Appointments
+        </NavItem>
+      </NavItems>
+
+      <Footer>
+        <LogoutButton whileTap={{ scale: 0.95 }} onClick={() => navigate("/")}>
+          <IconWrapper>
+            <LogOut size={18} />
+          </IconWrapper>
+          Log Out
+        </LogoutButton>
+      </Footer>
+    </SidebarContainer>
+  )
+}
+
+export default Sidebar

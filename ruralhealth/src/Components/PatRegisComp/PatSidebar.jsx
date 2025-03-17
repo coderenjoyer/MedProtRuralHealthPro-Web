@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     UserPlus, 
     Package, 
@@ -10,6 +11,7 @@ import {
 
 function Sidebar({ selectedMenu, setSelectedMenu }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const navigate = useNavigate(); // Initialize navigate function
     const iconSize = isCollapsed ? 28 : 24;
 
     return (
@@ -19,9 +21,6 @@ function Sidebar({ selectedMenu, setSelectedMenu }) {
             </button>
             
             <div className="logo-container">
-                <div className="profile-circle">
-                    <img src="/placeholder.jpg" alt="Profile" className="profile-image" />
-                </div>
                 {!isCollapsed && <div className="logo-text">Front Desk</div>}
             </div>
 
@@ -53,7 +52,11 @@ function Sidebar({ selectedMenu, setSelectedMenu }) {
             </div>
 
             <div className="sidebar-footer">
-                <button className="sidebar-button logout-button" title="Logout">
+                <button 
+                    className="sidebar-button logout-button" 
+                    title="Logout"
+                    onClick={() => navigate('/')} 
+                >
                     <LogOut size={iconSize} />
                     {!isCollapsed && <span>Logout</span>}
                 </button>
