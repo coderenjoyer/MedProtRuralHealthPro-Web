@@ -109,28 +109,34 @@ export const updatePatient = async (patientId: string, patientData: Partial<Pati
 };
 
 export const getAllPatients = async (): Promise<{ success: boolean; data?: Record<string, PatientData>; message: string }> => {
+  console.log('getAllPatients function called')
   try {
-    const patientsRef = ref(database, 'rhp/patients');
-    const snapshot = await get(patientsRef);
+    const patientsRef = ref(database, 'rhp/patients')
+    console.log('Attempting to fetch from path:', patientsRef.toString())
+    const snapshot = await get(patientsRef)
+    console.log('Database snapshot received:', snapshot.exists())
     
     if (snapshot.exists()) {
+      const data = snapshot.val()
+      console.log('Patient data retrieved:', Object.keys(data).length, 'patients found')
       return {
         success: true,
-        data: snapshot.val(),
+        data: data,
         message: 'Patients retrieved successfully'
-      };
+      }
     } else {
+      console.log('No patients found in database')
       return {
         success: true,
         data: {},
         message: 'No patients found'
-      };
+      }
     }
   } catch (error) {
-    console.error('Error getting all patients:', error);
+    console.error('Database error:', error)
     return {
       success: false,
       message: 'Failed to retrieve patients'
-    };
+    }
   }
 }; 

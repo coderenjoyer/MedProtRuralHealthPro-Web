@@ -268,8 +268,16 @@ function PatientInformation({ onRegister, onError }) {
                             style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         >
                             <option value="">Select Barangay</option>
-                            <option value="brgy1">Barangay 1</option>
-                            <option value="brgy2">Barangay 2</option>
+                            <option value="Poblacion">Poblacion</option>
+                            <option value="Compostela">Compostela</option>
+                            <option value="Legaspi">Legaspi</option>
+                            <option value="Sta. Filomena">Sta. Filomena</option>
+                            <option value="Montpeller">Montpeller</option>
+                            <option value="Madridejos">Madridejos</option>
+                            <option value="Lepanto">Lepanto</option>
+                            <option value="Valencia">Valencia</option>
+                            <option value="Guadalupe">Guadalupe</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
 

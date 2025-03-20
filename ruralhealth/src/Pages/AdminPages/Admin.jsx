@@ -1,9 +1,9 @@
-
 import styled from "styled-components"
 import Sidebar from "../../Components/AdminComp/Sidebar"
 import PatientTable from "../../Components/AdminComp/PatientTable"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FaBars } from "react-icons/fa"
+import { getAllPatients } from "../../Firebase/patientOperations"
 
 const DashboardContainer = styled.div`
   display: flex;
@@ -180,21 +180,87 @@ const SectionTitle = styled.h2`
   color: black;
 `
 
+const LoadingMessage = styled.div`
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+`
+
 export default function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [patientStats, setPatientStats] = useState({
+    totalPatients: 0,
+    barangayStats: []
+  })
+  const [loading, setLoading] = useState(true)
 
-  const barangayStats = [
-    { name: "Madridejos", count: 1 },
-    { name: "Legaspi", count: 0 },
-    { name: "Montpeller", count: 0 },
-    { name: "Other", count: 1 },
-    { name: "Poblacion", count: 2 },
-    { name: "Guadalupe", count: 0 },
-    { name: "Sta. Filomena", count: 0 },
-    { name: "Valencia", count: 1 },
+  const BARANGAY_LIST = [
+    "Poblacion",
+    "Compostela",
+    "Legaspi",
+    "Sta. Filomena",
+    "Montpeller",
+    "Madridejos",
+    "Lepanto",
+    "Valencia",
+    "Guadalupe",
+    "Other"
   ]
 
-  const totalPatients = barangayStats.reduce((sum, stat) => sum + stat.count, 0)
+  useEffect(() => {
+    const fetchPatientStats = async () => {
+      try {
+        const result = await getAllPatients()
+        if (result.success) {
+          console.log('Fetched patient data:', result.data)
+          
+          // Initialize counts for all barangays
+          const barangayCounts = BARANGAY_LIST.reduce((acc, brgy) => {
+            acc[brgy] = 0
+            return acc
+          }, {})
+
+          // Count patients per barangay
+          Object.values(result.data || {}).forEach(patient => {
+            console.log('Processing patient:', patient)
+            const barangay = patient.contactInfo?.address?.barangay
+            console.log('Patient barangay:', barangay)
+            
+            if (barangay && barangay !== '') {
+              if (BARANGAY_LIST.includes(barangay)) {
+                barangayCounts[barangay] = (barangayCounts[barangay] || 0) + 1
+              } else {
+                barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1
+              }
+            } else {
+              barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1
+            }
+          })
+
+          console.log('Barangay counts:', barangayCounts)
+
+          // Convert to array format for display
+          const barangayStats = BARANGAY_LIST.map(name => ({
+            name,
+            count: barangayCounts[name] || 0
+          }))
+
+          console.log('Final stats:', barangayStats)
+
+          setPatientStats({
+            totalPatients: Object.keys(result.data || {}).length,
+            barangayStats: barangayStats
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching patient statistics:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPatientStats()
+  }, [])
 
   return (
     <DashboardContainer>
@@ -205,22 +271,32 @@ export default function Dashboard() {
             <FaBars />
           </MenuButton>
           <Title>DASHBOARD</Title>
-          <Time>Saturday 9:47:00 AM</Time>
+          <Time>{new Date().toLocaleString('en-US', { 
+            weekday: 'long',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            hour12: true 
+          })}</Time>
         </Header>
 
         <TotalPatients>
           <h2>Total Patients Registered</h2>
-          <p>{totalPatients}</p>
+          <p>{loading ? "Loading..." : patientStats.totalPatients}</p>
         </TotalPatients>
 
         <SectionTitle>Patient Registered From Different Barangays:</SectionTitle>
         <StatsGrid>
-          {barangayStats.map((stat, index) => (
-            <StatCard key={index}>
-              <h3>{stat.name}</h3>
-              <p>{stat.count}</p>
-            </StatCard>
-          ))}
+          {loading ? (
+            <LoadingMessage>Loading statistics...</LoadingMessage>
+          ) : (
+            patientStats.barangayStats.map((stat, index) => (
+              <StatCard key={index}>
+                <h3>{stat.name}</h3>
+                <p>{stat.count}</p>
+              </StatCard>
+            ))
+          )}
         </StatsGrid>
 
         <TableSection>

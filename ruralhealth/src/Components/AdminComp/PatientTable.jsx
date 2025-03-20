@@ -1,4 +1,6 @@
 import styled from "styled-components"
+import { useEffect, useState } from "react"
+import { getAllPatients } from "../../Firebase/patientOperations"
 
 const TableWrapper = styled.div`
   width: 100%;
@@ -35,22 +37,64 @@ const Tr = styled.tr`
   }
 `
 
-const patientData = [
-  {
-    lastName: "Hyacinth",
-    firstName: "Salve",
-    middleName: "Acebuche",
-    barangay: "Madridejos",
-    phoneNumber: "0960053456",
-    age: "20",
-    birthdate: "3/29/2004",
-    gender: "Female",
-    registrationDate: "4/30/2024",
-  },
-  // Add more sample data as needed
-]
+const LoadingMessage = styled.div`
+  text-align: center;
+  padding: 20px;
+  color: #666;
+`
+
+const ErrorMessage = styled.div`
+  text-align: center;
+  padding: 20px;
+  color: #ff4444;
+`
 
 export default function PatientTable() {
+  const [patients, setPatients] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const result = await getAllPatients()
+        if (result.success) {
+          // Convert the object of patients into an array and sort by registration date
+          const patientsArray = Object.entries(result.data || {})
+            .map(([id, patient]) => ({
+              id,
+              ...patient.personalInfo,
+              barangay: patient.contactInfo?.address?.barangay || '',
+              phoneNumber: patient.contactInfo?.contactNumber || '',
+              registrationDate: patient.registrationInfo?.registrationDate || ''
+            }))
+            .sort((a, b) => {
+              // Sort in descending order (most recent first)
+              return new Date(b.registrationDate) - new Date(a.registrationDate)
+            })
+          setPatients(patientsArray)
+        } else {
+          setError(result.message)
+        }
+      } catch (err) {
+        setError('Failed to fetch patients')
+        console.error('Error fetching patients:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPatients()
+  }, [])
+
+  if (loading) {
+    return <LoadingMessage>Loading patients...</LoadingMessage>
+  }
+
+  if (error) {
+    return <ErrorMessage>{error}</ErrorMessage>
+  }
+
   return (
     <TableWrapper>
       <Table>
@@ -61,24 +105,18 @@ export default function PatientTable() {
             <Th>Middle Name</Th>
             <Th>Barangay</Th>
             <Th>Phone Number</Th>
-            <Th>Age</Th>
-            <Th>Birthdate</Th>
-            <Th>Gender</Th>
             <Th>Registration Date</Th>
           </tr>
         </thead>
         <tbody>
-          {patientData.map((patient, index) => (
-            <Tr key={index}>
+          {patients.map((patient) => (
+            <Tr key={patient.id}>
               <Td>{patient.lastName}</Td>
               <Td>{patient.firstName}</Td>
               <Td>{patient.middleName}</Td>
               <Td>{patient.barangay}</Td>
               <Td>{patient.phoneNumber}</Td>
-              <Td>{patient.age}</Td>
-              <Td>{patient.birthdate}</Td>
-              <Td>{patient.gender}</Td>
-              <Td>{patient.registrationDate}</Td>
+              <Td>{new Date(patient.registrationDate).toLocaleDateString()}</Td>
             </Tr>
           ))}
         </tbody>
