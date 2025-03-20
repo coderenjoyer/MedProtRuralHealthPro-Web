@@ -21,7 +21,9 @@ const DashboardContainer = styled.div`
 
 const MainContent = styled.main`
   flex: 1;
-  margin-left: ${(props) => (props.$isSidebarOpen ? "200px" : "0")};
+  max-width: 1200px; /* ✅ Restrict max width */
+  margin: 0 auto; /* ✅ Center horizontally */
+  margin-left: ${(props) => (props.$isSidebarOpen ? "200px" : "auto")};
   padding: 20px;
   transition: margin-left 0.3s ease;
   width: calc(100% - ${(props) => (props.$isSidebarOpen ? "200px" : "0")});
@@ -32,7 +34,7 @@ const MainContent = styled.main`
     padding: 15px;
     width: 100%;
   }
-`
+`;
 
 const Header = styled.header`
   display: flex;
@@ -193,6 +195,7 @@ export default function Dashboard() {
     barangayStats: []
   })
   const [loading, setLoading] = useState(true)
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   const BARANGAY_LIST = [
     "Poblacion",
@@ -206,6 +209,16 @@ export default function Dashboard() {
     "Guadalupe",
     "Other"
   ]
+
+  // Time update effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const fetchPatientStats = async () => {
@@ -271,13 +284,15 @@ export default function Dashboard() {
             <FaBars />
           </MenuButton>
           <Title>DASHBOARD</Title>
-          <Time>{new Date().toLocaleString('en-US', { 
-            weekday: 'long',
-            hour: 'numeric',
-            minute: 'numeric',
-            second: 'numeric',
-            hour12: true 
-          })}</Time>
+          <Time>
+            {currentTime.toLocaleString('en-US', { 
+              weekday: 'long',
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+              hour12: true 
+            })}
+          </Time>
         </Header>
 
         <TotalPatients>
