@@ -17,11 +17,11 @@ const Table = styled.table`
 `
 
 const Th = styled.th`
-  background: #f5f5f5;
+  background: #095D7E;
   padding: 12px;
   text-align: left;
   font-weight: 600;
-  color: #333;
+  color: white;
   white-space: nowrap;
 `
 
@@ -33,20 +33,20 @@ const Td = styled.td`
 
 const Tr = styled.tr`
   &:hover {
-    background: #f9f9f9;
+    background: rgba(9, 93, 126, 0.1);
   }
 `
 
 const LoadingMessage = styled.div`
   text-align: center;
   padding: 20px;
-  color: #666;
+  color: #095D7E;
 `
 
 const ErrorMessage = styled.div`
   text-align: center;
   padding: 20px;
-  color: #ff4444;
+  color: #095D7E;
 `
 
 export default function PatientTable() {

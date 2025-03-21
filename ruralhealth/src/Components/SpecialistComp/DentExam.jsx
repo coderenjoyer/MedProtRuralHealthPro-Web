@@ -17,8 +17,8 @@ const ExaminationContainer = styled(motion.div)`
 `
 
 const ExaminationHeader = styled.div`
-  background: linear-gradient(90deg, ${({ theme }) => theme.colors.secondaryDark} 0%, ${({ theme }) => theme.colors.secondary} 100%);
-  color: white;
+  background: linear-gradient(90deg, #81D4FA 0%, #64B5F6 100%);
+  color: black;
   padding: 1rem 1.5rem;
   display: flex;
   justify-content: space-between;
@@ -28,6 +28,7 @@ const ExaminationHeader = styled.div`
 const ExaminationTitle = styled.h2`
   font-size: 1.5rem;
   font-weight: 600;
+  color: black;
 `
 
 const PatientNumber = styled.div`
@@ -38,6 +39,7 @@ const PatientNumber = styled.div`
 
 const PatientNumberLabel = styled.span`
   font-size: 0.875rem;
+  color: black;
 `
 
 const PatientNumberValue = styled.span`
@@ -46,6 +48,7 @@ const PatientNumberValue = styled.span`
   background-color: rgba(255, 255, 255, 0.2);
   padding: 0.25rem 0.5rem;
   border-radius: ${({ theme }) => theme.borderRadius.md};
+  color: black;
 `
 
 const ExaminationForm = styled.form`
@@ -66,7 +69,7 @@ const FormSection = styled.div`
 const SectionTitle = styled.h3`
   font-size: 1.25rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.secondaryDark};
+  color: black;
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid ${({ theme }) => theme.colors.grayLight};
@@ -81,7 +84,7 @@ const FormRow = styled.div`
 const FormLabel = styled.label`
   font-size: 0.875rem;
   font-weight: 500;
-  color: ${({ theme }) => theme.colors.grayDark};
+  color: black;
   width: 140px;
   flex-shrink: 0;
 `
@@ -92,12 +95,18 @@ const FormInput = styled.input`
   border: 1px solid ${({ theme }) => theme.colors.grayLight};
   border-radius: ${({ theme }) => theme.borderRadius.md};
   font-size: 0.875rem;
+  color: black;
   transition: all 0.2s ease;
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryLight};
+    border-color: #81D4FA;
+    box-shadow: 0 0 0 2px rgba(129, 212, 250, 0.1);
+  }
+
+  &::placeholder {
+    color: black;
+    opacity: 0.7;
   }
 `
 
@@ -121,20 +130,20 @@ const Button = styled(motion.button)`
 
 const ClearButton = styled(Button)`
   background-color: ${({ theme }) => theme.colors.grayLight};
-  color: ${({ theme }) => theme.colors.grayDark};
+  color: black;
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.gray};
-    color: white;
+    color: black;
   }
 `
 
 const SubmitButton = styled(Button)`
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: white;
+  background-color: #81D4FA;
+  color: black;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryDark};
+    background-color: #64B5F6;
   }
 `
 

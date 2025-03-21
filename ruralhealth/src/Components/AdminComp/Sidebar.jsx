@@ -6,7 +6,7 @@ import { FaUser, FaDatabase, FaMedkit, FaSignOutAlt } from "react-icons/fa";
 import { MdDashboard } from "react-icons/md";
 
 const SidebarContainer = styled.div`
-  background-color: #004b87;
+  background-color: #095D7E;
   width: 200px;
   height: 100vh;
   color: white;
@@ -67,7 +67,7 @@ const NavItem = styled.div`
   cursor: pointer;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(9, 93, 126, 0.3);
   }
 
   svg {

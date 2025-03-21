@@ -52,7 +52,7 @@ const Header = styled.header`
 
 const Title = styled.h1`
   font-size: 24px;
-  color: #333;
+  color: #095D7E;
   margin: 0;
 
   @media (max-width: 768px) {
@@ -61,7 +61,7 @@ const Title = styled.h1`
 `
 
 const Time = styled.span`
-  color: #666;
+  color: #095D7E;
 
   @media (max-width: 768px) {
     font-size: 14px;
@@ -89,14 +89,14 @@ const StatCard = styled.div`
   h3 {
     margin: 0 0 5px 0;
     font-size: 14px;
-    color: #666;
+    color: #095D7E;
   }
 
   p {
     margin: 0;
     font-size: 24px;
     font-weight: bold;
-    color: #333;
+    color: #095D7E;
   }
 
   @media (max-width: 768px) {
@@ -121,7 +121,7 @@ const TableSection = styled.section`
 
   h2 {
     margin: 0 0 20px 0;
-    color: #333;
+    color: #095D7E;
   }
 
   @media (max-width: 768px) {
@@ -137,7 +137,7 @@ const MenuButton = styled.button`
   display: none;
   background: none;
   border: none;
-  color: #333;
+  color: #095D7E;
   font-size: 24px;
   cursor: pointer;
   padding: 5px;
@@ -148,7 +148,7 @@ const MenuButton = styled.button`
 `
 
 const TotalPatients = styled.div`
-  background: #004b87;
+  background: #095D7E;
   color: white;
   padding: 15px;
   border-radius: 4px;
@@ -179,12 +179,12 @@ const TotalPatients = styled.div`
 `
 
 const SectionTitle = styled.h2`
-  color: black;
+  color: #095D7E;
 `
 
 const LoadingMessage = styled.div`
   text-align: center;
-  color: #666;
+  color: #095D7E;
   font-size: 16px;
 `
 

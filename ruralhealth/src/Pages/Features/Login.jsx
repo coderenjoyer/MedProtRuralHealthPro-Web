@@ -11,8 +11,8 @@ const Container = styled.div`
   height: 100vh;
   width: 100vw;
   background: url("/bgbgrh.png") no-repeat center center;
-  background-size: cover; /* ✅ Ensures it spans the entire background */
-  background-attachment: fixed; /* ✅ Prevents scrolling issues */
+  background-size: cover;
+  background-attachment: fixed;
 `;
 
 

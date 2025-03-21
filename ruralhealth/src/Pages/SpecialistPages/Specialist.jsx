@@ -8,10 +8,10 @@ import theme from "../../styles/spec.theme.js"
 import Sidebar from "../../Components/SpecialistComp/Sidebar.jsx"
 import DentalExamination from "../../Components/SpecialistComp/DentExam.jsx"
 import PatientRegistry from "../../Components/SpecialistComp/PatientReg.jsx"
+import Appo from "../../Components/PatRegisComp/PatAppo"
 import { AppContainer, MainContent } from "../../styles/specstyleapp.js"
 
-
-function App() {
+function Specialist() {
   const [activeView, setActiveView] = useState("examination")
 
   return (
@@ -49,8 +49,7 @@ function App() {
                 transition={{ duration: 0.3 }}
                 style={{ height: "100%" }}
               >
-                <h2>Appointments</h2>
-                <p>Appointment calendar and scheduling tools will be displayed here.</p>
+                <Appo />
               </motion.div>
             )}
           </AnimatePresence>
@@ -60,5 +59,5 @@ function App() {
   )
 }
 
-export default App
+export default Specialist
 

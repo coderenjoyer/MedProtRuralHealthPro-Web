@@ -17,44 +17,44 @@ const PageContainer = styled.div`
 
 const MainWrapper = styled.div`
   flex: 1;
-  margin-left: ${(props) => (props.$isSidebarOpen ? "200px" : "0")};
+  margin-left: ${(props) => (props.$isSidebarOpen ? "250px" : "0")};
   transition: margin-left 0.3s ease;
   min-height: 100vh;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: flex-start;
-  padding: 2rem;
+  padding: 2.5rem;
 
   @media (max-width: 768px) {
     margin-left: 0;
-    padding: 1rem;
+    padding: 1.5rem;
   }
 `;
 
 const ContentContainer = styled.div`
   width: 100%;
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2rem;
+  align-items: flex-start;
+  gap: 2.5rem;
 `;
 
 const Header = styled.header`
   width: 100%;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   position: relative;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 `;
 
 const Title = styled.h1`
   font-size: 28px;
-  color: #333;
+  color: #095D7E;
   margin: 0;
-  text-align: center;
+  text-align: left;
 
   @media (max-width: 768px) {
     font-size: 24px;
@@ -65,7 +65,7 @@ const MenuButton = styled.button`
   display: none;
   background: none;
   border: none;
-  color: #333;
+  color: #095D7E;
   font-size: 24px;
   cursor: pointer;
   padding: 5px;
@@ -79,8 +79,8 @@ const MenuButton = styled.button`
 
 const PanelsContainer = styled.div`
   display: flex;
-  justify-content: center;
-  gap: 2rem;
+  justify-content: flex-start;
+  gap: 2.5rem;
   width: 100%;
   flex-wrap: wrap;
 `;
@@ -91,110 +91,115 @@ const Panel = styled.div`
   max-width: 600px;
   background-color: white;
   border-radius: 8px;
-  padding: 2rem;
+  padding: 2.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   @media (max-width: 1200px) {
     max-width: 100%;
+    padding: 2rem;
   }
 `;
 
 const PanelTitle = styled.h3`
-  margin: 0 0 25px 0;
+  margin: 0 0 30px 0;
   font-size: 20px;
-  color: #004b87;
+  color: #095D7E;
   font-weight: 600;
 `;
 
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 30px;
+  margin-bottom: 35px;
   background-color: white;
   border-radius: 4px;
   overflow: hidden;
 `;
 
 const Th = styled.th`
-  background-color: #004b87;
+  background-color: #095D7E;
   color: white;
-  padding: 12px;
+  padding: 15px;
   text-align: left;
   font-weight: 600;
   font-size: 14px;
 `;
 
 const Td = styled.td`
-  padding: 12px;
+  padding: 15px;
   border-bottom: 1px solid #eee;
   font-size: 14px;
 `;
 
 const PasswordSection = styled.div`
-  margin-top: 30px;
+  margin-top: 35px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   background-color: #f8f9fa;
-  padding: 20px;
+  padding: 2.5rem;
   border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
 `;
 
 const InputGroup = styled.div`
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   width: 100%;
-  max-width: 300px;
+  max-width: 350px;
 
   label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     text-align: left;
-    color: #666;
+    color: #095D7E;
     font-size: 14px;
   }
 
   input {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
+    padding: 12px;
+    border: 1px solid #095D7E;
     border-radius: 4px;
     font-size: 14px;
+    text-align: left;
 
     &:focus {
       outline: none;
-      border-color: #004b87;
-      box-shadow: 0 0 0 2px rgba(0, 75, 135, 0.1);
+      border-color: #095D7E;
+      box-shadow: 0 0 0 2px rgba(9, 93, 126, 0.1);
     }
   }
 `;
 
 const Button = styled.button`
-  background-color: #004b87;
+  background-color: #095D7E;
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 10px 20px;
+  padding: 12px 25px;
   cursor: pointer;
   font-weight: 500;
   font-size: 14px;
   transition: background-color 0.2s;
+  margin: 0 5px;
 
   &:hover {
-    background-color: #003c6f;
+    background-color: #074A64;
   }
 `;
 
 const EmptyState = styled.div`
   text-align: center;
   padding: 20px;
-  color: #666;
+  color: #095D7E;
   font-size: 16px;
 `;
 
 const LoadingState = styled.div`
   text-align: center;
   padding: 20px;
-  color: #004b87;
+  color: #095D7E;
   font-size: 18px;
 `;
 

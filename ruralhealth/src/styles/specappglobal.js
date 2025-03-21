@@ -15,17 +15,64 @@ const GlobalStyle = createGlobalStyle`
   }
 
   body {
-    background-color: #f8fafc;
-    color: #334155;
+    background-color: #f5f7fb;
+    color: black;
+    line-height: 1.5;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    color: #1e293b;
-    font-weight: 600;
+    color: black;
+    margin-bottom: 1rem;
   }
 
-  button, input, select, textarea {
-    font-family: inherit;
+  p {
+    color: black;
+    margin-bottom: 1rem;
+  }
+
+  a {
+    color: black;
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: black;
+  }
+
+  input, textarea, select {
+    color: black;
+    font-family: Arial, sans-serif;
+  }
+
+  button {
+    color: black;
+    font-family: Arial, sans-serif;
+  }
+
+  label {
+    color: black;
+  }
+
+  ::placeholder {
+    color: black;
+    opacity: 0.7;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.colors.primaryLight};
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.colors.primary};
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.colors.primaryDark};
   }
 `
 

@@ -77,7 +77,7 @@ const Header = styled.header`
 
 const Title = styled.h1`
   font-size: 28px;
-  color: #333;
+  color: #4FC3F7;
   margin: 0;
   text-align: center;
 
@@ -90,7 +90,7 @@ const MenuButton = styled.button`
   display: none;
   background: none;
   border: none;
-  color: #333;
+  color: #4FC3F7;
   font-size: 24px;
   cursor: pointer;
   padding: 5px;
@@ -120,16 +120,16 @@ const PatientListSection = styled.div`
   overflow: auto;
   height: 100%;
   
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   &::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
   }
 `;
 
 const PatientProfileSection = styled.div`
   flex: 1;
-  background: #808080;
+  background: #095D7E;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 2rem;
@@ -141,10 +141,10 @@ const PatientProfileSection = styled.div`
   height: 100%;
   overflow: auto;
   
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   &::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
   }
 
   @media (max-width: 1200px) {
@@ -156,13 +156,13 @@ const SearchBar = styled.div`
   display: flex;
   align-items: center;
   background: white;
-  border: 1px solid #ddd;
+  border: 1px solid #095D7E;
   border-radius: 6px;
   padding: 10px 15px;
   margin-bottom: 20px;
   
   svg {
-    color: #666;
+    color: #095D7E;
     margin-right: 10px;
     font-size: 16px;
   }
@@ -197,7 +197,7 @@ const Table = styled.table`
 `
 
 const Th = styled.th`
-  background: #007bff;
+  background: #095D7E;
   color: white;
   padding: 12px 15px;
   text-align: left;
@@ -216,11 +216,11 @@ const Tr = styled.tr`
   cursor: pointer;
   
   &:hover {
-    background: #f5f5f5;
+    background: rgba(9, 93, 126, 0.1);
   }
   
   &.selected {
-    background: #e6f2ff;
+    background: rgba(9, 93, 126, 0.2);
   }
 `
 
@@ -276,7 +276,7 @@ const PhotoPlaceholder = styled.div`
 `
 
 const DeleteButton = styled.button`
-  background-color: #dc3545;
+  background-color: #095D7E;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -288,7 +288,7 @@ const DeleteButton = styled.button`
   transition: background-color 0.2s;
   
   &:hover {
-    background-color: #c82333;
+    background-color: #074a63;
   }
 `
 

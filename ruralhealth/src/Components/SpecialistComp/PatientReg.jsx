@@ -79,7 +79,7 @@ const TableHeader = styled.th`
   padding: 0.5rem 0.25rem;
   text-align: left;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.secondaryDark};
+  color: #4FC3F7;
   border-bottom: 2px solid ${({ theme }) => theme.colors.grayLight};
   white-space: nowrap;
   font-size: 0.75rem;
