@@ -31,8 +31,16 @@ function PatientInformation({ onRegister, onError }) {
             bloodType: ''
         }
     });
+    
+    // Add validation states to track field-specific errors
+    const [validationErrors, setValidationErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const validateForm = () => {
+        // Reset validation errors
+        const errors = {};
+        let isValid = true;
+
         // Required fields validation
         const requiredFields = [
             { field: 'firstName', label: 'First Name' },
@@ -53,36 +61,124 @@ function PatientInformation({ onRegister, onError }) {
                 : formData[field];
 
             if (!value) {
-                onError(`${label} is required`);
-                return false;
+                errors[field] = `${label} is required`;
+                isValid = false;
             }
         }
 
-        // Email validation
-        if (formData.contactInfo.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactInfo.email)) {
-            onError('Please enter a valid email address');
-            return false;
+        // Email validation - only if email is provided
+        if (formData.contactInfo.email) {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactInfo.email)) {
+                errors['contactInfo.email'] = 'Please enter a valid email address';
+                isValid = false;
+            }
         }
 
         // Phone number validation
-        if (formData.contactInfo.phoneNumber && !/^\+?[\d\s-]{10,}$/.test(formData.contactInfo.phoneNumber)) {
-            onError('Please enter a valid phone number');
-            return false;
+        if (formData.contactInfo.phoneNumber) {
+            if (!/^\+?[\d\s-]{10,}$/.test(formData.contactInfo.phoneNumber)) {
+                errors['contactInfo.phoneNumber'] = 'Please enter a valid phone number (at least 10 digits)';
+                isValid = false;
+            }
         }
 
         // Age validation
         const age = parseInt(formData.personalInfo.age);
         if (isNaN(age) || age < 0 || age > 150) {
-            onError('Please enter a valid age');
-            return false;
+            errors['personalInfo.age'] = 'Please enter a valid age (0-150)';
+            isValid = false;
         }
 
-        return true;
+        // Birthdate validation
+        if (formData.personalInfo.birthdate) {
+            const birthdate = new Date(formData.personalInfo.birthdate);
+            const today = new Date();
+            
+            // Check if birthdate is in the future
+            if (birthdate > today) {
+                errors['personalInfo.birthdate'] = 'Birthdate cannot be in the future';
+                isValid = false;
+            }
+            
+            // Calculate age from birthdate and compare with entered age
+            if (!isNaN(age)) {
+                const birthYear = birthdate.getFullYear();
+                const currentYear = today.getFullYear();
+                const calculatedAge = currentYear - birthYear;
+                
+                // Allow 1 year difference due to different months/days
+                if (Math.abs(calculatedAge - age) > 1) {
+                    errors['personalInfo.age'] = 'Age does not match birthdate';
+                    isValid = false;
+                }
+            }
+        }
+
+        // Height and weight validation if provided
+        if (formData.medicalInfo.height) {
+            const height = parseFloat(formData.medicalInfo.height);
+            if (isNaN(height) || height <= 0 || height > 300) {
+                errors['medicalInfo.height'] = 'Please enter a valid height (1-300 cm)';
+                isValid = false;
+            }
+        }
+
+        if (formData.medicalInfo.weight) {
+            const weight = parseFloat(formData.medicalInfo.weight);
+            if (isNaN(weight) || weight <= 0 || weight > 700) {
+                errors['medicalInfo.weight'] = 'Please enter a valid weight (1-700 kg)';
+                isValid = false;
+            }
+        }
+        
+        // BMI validation - check if manually entered BMI matches calculated BMI
+        if (formData.medicalInfo.bmi && formData.medicalInfo.height && formData.medicalInfo.weight) {
+            const height = parseFloat(formData.medicalInfo.height);
+            const weight = parseFloat(formData.medicalInfo.weight);
+            const enteredBmi = parseFloat(formData.medicalInfo.bmi);
+            
+            if (!isNaN(height) && !isNaN(weight) && height > 0 && weight > 0) {
+                const calculatedBmi = (weight / ((height / 100) * (height / 100))).toFixed(2);
+                
+                // Allow small difference due to rounding
+                if (Math.abs(enteredBmi - calculatedBmi) > 0.1) {
+                    errors['medicalInfo.bmi'] = 'BMI does not match height and weight';
+                    isValid = false;
+                }
+            }
+        }
+
+        // Zipcode validation if provided
+        if (formData.address.zipcode) {
+            if (!/^\d{4,5}$/.test(formData.address.zipcode)) {
+                errors['address.zipcode'] = 'Please enter a valid zipcode (4-5 digits)';
+                isValid = false;
+            }
+        }
+
+        setValidationErrors(errors);
+        
+        if (!isValid) {
+            onError(Object.values(errors)[0]); // Show first error in the main error UI
+        }
+        
+        return isValid;
     };
 
     const handleInputChange = (e, section, field) => {
         const { value } = e.target;
+        
+        // Clear specific validation error when field is edited
         if (section) {
+            const errorKey = `${section}.${field}`;
+            if (validationErrors[errorKey]) {
+                setValidationErrors(prev => {
+                    const updated = {...prev};
+                    delete updated[errorKey];
+                    return updated;
+                });
+            }
+            
             setFormData(prev => ({
                 ...prev,
                 [section]: {
@@ -91,6 +187,14 @@ function PatientInformation({ onRegister, onError }) {
                 }
             }));
         } else {
+            if (validationErrors[field]) {
+                setValidationErrors(prev => {
+                    const updated = {...prev};
+                    delete updated[field];
+                    return updated;
+                });
+            }
+            
             setFormData(prev => ({
                 ...prev,
                 [field]: value
@@ -99,8 +203,9 @@ function PatientInformation({ onRegister, onError }) {
 
         // Calculate BMI when height and weight are both present
         if (section === 'medicalInfo' && (field === 'height' || field === 'weight')) {
-            const height = parseFloat(formData.medicalInfo.height);
-            const weight = parseFloat(formData.medicalInfo.weight);
+            const height = field === 'height' ? parseFloat(value) : parseFloat(formData.medicalInfo.height);
+            const weight = field === 'weight' ? parseFloat(value) : parseFloat(formData.medicalInfo.weight);
+            
             if (!isNaN(height) && !isNaN(weight) && height > 0 && weight > 0) {
                 const bmi = (weight / ((height / 100) * (height / 100))).toFixed(2);
                 setFormData(prev => ({
@@ -110,22 +215,69 @@ function PatientInformation({ onRegister, onError }) {
                         bmi
                     }
                 }));
+                
+                // Clear BMI validation error if it exists
+                if (validationErrors['medicalInfo.bmi']) {
+                    setValidationErrors(prev => {
+                        const updated = {...prev};
+                        delete updated['medicalInfo.bmi'];
+                        return updated;
+                    });
+                }
+            }
+        }
+        
+        // Calculate age from birthdate
+        if (section === 'personalInfo' && field === 'birthdate') {
+            try {
+                const birthdate = new Date(value);
+                const today = new Date();
+                if (birthdate <= today) { // Only calculate if date is valid and not in future
+                    const birthYear = birthdate.getFullYear();
+                    const currentYear = today.getFullYear();
+                    const calculatedAge = currentYear - birthYear;
+                    
+                    setFormData(prev => ({
+                        ...prev,
+                        personalInfo: {
+                            ...prev.personalInfo,
+                            age: calculatedAge.toString()
+                        }
+                    }));
+                    
+                    // Clear age validation error if it exists
+                    if (validationErrors['personalInfo.age']) {
+                        setValidationErrors(prev => {
+                            const updated = {...prev};
+                            delete updated['personalInfo.age'];
+                            return updated;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error calculating age:", error);
             }
         }
     };
 
     const handleSubmit = async () => {
+        if (isSubmitting) {
+            return; // Prevent multiple submissions
+        }
+        
         if (!validateForm()) {
             return;
         }
 
         try {
+            setIsSubmitting(true);
+            
             // Structure the patient data according to the expected format
             const patientData = {
                 personalInfo: {
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    middleName: formData.middleName,
+                    firstName: formData.firstName.trim(),
+                    lastName: formData.lastName.trim(),
+                    middleName: formData.middleName.trim(),
                     birthdate: formData.personalInfo.birthdate,
                     gender: formData.personalInfo.gender,
                     age: parseInt(formData.personalInfo.age),
@@ -133,15 +285,15 @@ function PatientInformation({ onRegister, onError }) {
                     employmentStatus: formData.personalInfo.employmentStatus
                 },
                 address: {
-                    street: formData.address.street,
+                    street: formData.address.street.trim(),
                     barangay: formData.address.barangay,
-                    municipality: formData.address.municipality,
-                    province: formData.address.province,
+                    municipality: formData.address.municipality.trim(),
+                    province: formData.address.province.trim(),
                     zipcode: formData.address.zipcode
                 },
                 contactInfo: {
-                    email: formData.contactInfo.email,
-                    contactNumber: formData.contactInfo.phoneNumber
+                    email: formData.contactInfo.email.trim(),
+                    contactNumber: formData.contactInfo.phoneNumber.trim()
                 },
                 medicalInfo: {
                     height: parseFloat(formData.medicalInfo.height) || null,
@@ -191,6 +343,7 @@ function PatientInformation({ onRegister, onError }) {
                         bloodType: ''
                     }
                 });
+                setValidationErrors({});
                 // Show success message and reload page
                 alert('Patient registered successfully!');
                 window.location.reload();
@@ -199,8 +352,22 @@ function PatientInformation({ onRegister, onError }) {
             }
         } catch (error) {
             console.error('Registration error:', error);
-            onError('Error registering patient: ' + error.message);
+            onError(`Error registering patient: ${error.message || 'Unknown error'}`);
+        } finally {
+            setIsSubmitting(false);
         }
+    };
+
+    // Helper function to determine if a field has an error
+    const hasError = (section, field) => {
+        const errorKey = section ? `${section}.${field}` : field;
+        return validationErrors[errorKey] ? true : false;
+    };
+
+    // Helper function to get error message for a field
+    const getErrorMessage = (section, field) => {
+        const errorKey = section ? `${section}.${field}` : field;
+        return validationErrors[errorKey] || '';
     };
 
     return (
@@ -216,23 +383,29 @@ function PatientInformation({ onRegister, onError }) {
                             <label>Last Name *</label>
                             <input 
                                 type="text" 
-                                className="form-control light-theme"
+                                className={`form-control light-theme ${hasError(null, 'lastName') ? 'is-invalid' : ''}`}
                                 value={formData.lastName}
                                 onChange={(e) => handleInputChange(e, null, 'lastName')}
                                 required
                                 style={{ backgroundColor: '#ffffff', color: '#000000' }}
                             />
+                            {hasError(null, 'lastName') && 
+                                <div className="invalid-feedback">{getErrorMessage(null, 'lastName')}</div>
+                            }
                         </div>
                         <div className="form-group">
                             <label>First Name *</label>
                             <input 
                                 type="text" 
-                                className="form-control light-theme"
+                                className={`form-control light-theme ${hasError(null, 'firstName') ? 'is-invalid' : ''}`}
                                 value={formData.firstName}
                                 onChange={(e) => handleInputChange(e, null, 'firstName')}
                                 required
                                 style={{ backgroundColor: '#ffffff', color: '#000000' }}
                             />
+                            {hasError(null, 'firstName') && 
+                                <div className="invalid-feedback">{getErrorMessage(null, 'firstName')}</div>
+                            }
                         </div>
                         <div className="form-group">
                             <label>Middle Name</label>
@@ -250,18 +423,21 @@ function PatientInformation({ onRegister, onError }) {
                         <label>Street Address/Purok *</label>
                         <input 
                             type="text" 
-                            className="form-control light-theme"
+                            className={`form-control light-theme ${hasError('address', 'street') ? 'is-invalid' : ''}`}
                             value={formData.address.street}
                             onChange={(e) => handleInputChange(e, 'address', 'street')}
                             required
                             style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
+                        {hasError('address', 'street') && 
+                            <div className="invalid-feedback">{getErrorMessage('address', 'street')}</div>
+                        }
                     </div>
 
                     <div className="form-group">
                         <label>Barangay *</label>
                         <select 
-                            className="form-control light-theme"
+                            className={`form-control light-theme ${hasError('address', 'barangay') ? 'is-invalid' : ''}`}
                             value={formData.address.barangay}
                             onChange={(e) => handleInputChange(e, 'address', 'barangay')}
                             required
@@ -279,75 +455,98 @@ function PatientInformation({ onRegister, onError }) {
                             <option value="Guadalupe">Guadalupe</option>
                             <option value="Other">Other</option>
                         </select>
+                        {hasError('address', 'barangay') && 
+                            <div className="invalid-feedback">{getErrorMessage('address', 'barangay')}</div>
+                        }
                     </div>
 
                     <div className="form-group">
                         <label>Municipality *</label>
                         <input 
                             type="text" 
-                            className="form-control light-theme"
+                            className={`form-control light-theme ${hasError('address', 'municipality') ? 'is-invalid' : ''}`}
                             value={formData.address.municipality}
                             onChange={(e) => handleInputChange(e, 'address', 'municipality')}
                             required
                             style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
+                        {hasError('address', 'municipality') && 
+                            <div className="invalid-feedback">{getErrorMessage('address', 'municipality')}</div>
+                        }
                     </div>
 
                     <div className="form-group">
                         <label>Province *</label>
                         <input 
                             type="text" 
-                            className="form-control light-theme"
+                            className={`form-control light-theme ${hasError('address', 'province') ? 'is-invalid' : ''}`}
                             value={formData.address.province}
                             onChange={(e) => handleInputChange(e, 'address', 'province')}
                             required
                             style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
+                        {hasError('address', 'province') && 
+                            <div className="invalid-feedback">{getErrorMessage('address', 'province')}</div>
+                        }
                     </div>
 
                     <div className="form-group">
-                        <label>Zipcode</label>
+                        <label>Zip Code</label>
                         <input 
                             type="text" 
-                            className="form-control light-theme"
+                            className={`form-control light-theme ${hasError('address', 'zipcode') ? 'is-invalid' : ''}`}
                             value={formData.address.zipcode}
                             onChange={(e) => handleInputChange(e, 'address', 'zipcode')}
                             style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
+                        {hasError('address', 'zipcode') && 
+                            <div className="invalid-feedback">{getErrorMessage('address', 'zipcode')}</div>
+                        }
                     </div>
 
+                </div>
+                <div className="right-section">
+                    <h4>Personal Information</h4>
                     <div className="form-group">
-                        <label>Birthdate *</label>
+                        <label>Birth Date *</label>
                         <input 
                             type="date" 
-                            className="form-control light-theme"
+                            className={`form-control light-theme ${hasError('personalInfo', 'birthdate') ? 'is-invalid' : ''}`}
                             value={formData.personalInfo.birthdate}
                             onChange={(e) => handleInputChange(e, 'personalInfo', 'birthdate')}
                             required
                             style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            max={new Date().toISOString().split('T')[0]} // Set max date to today
                         />
+                        {hasError('personalInfo', 'birthdate') && 
+                            <div className="invalid-feedback">{getErrorMessage('personalInfo', 'birthdate')}</div>
+                        }
                     </div>
 
                     <div className="form-group">
                         <label>Gender *</label>
                         <select 
-                            className="form-control light-theme"
+                            className={`form-control light-theme ${hasError('personalInfo', 'gender') ? 'is-invalid' : ''}`}
                             value={formData.personalInfo.gender}
                             onChange={(e) => handleInputChange(e, 'personalInfo', 'gender')}
                             required
                             style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         >
                             <option value="">Select Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
                         </select>
+                        {hasError('personalInfo', 'gender') && 
+                            <div className="invalid-feedback">{getErrorMessage('personalInfo', 'gender')}</div>
+                        }
                     </div>
 
                     <div className="form-group">
                         <label>Age *</label>
                         <input 
                             type="number" 
-                            className="form-control light-theme"
+                            className={`form-control light-theme ${hasError('personalInfo', 'age') ? 'is-invalid' : ''}`}
                             value={formData.personalInfo.age}
                             onChange={(e) => handleInputChange(e, 'personalInfo', 'age')}
                             required
@@ -355,138 +554,156 @@ function PatientInformation({ onRegister, onError }) {
                             max="150"
                             style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
-                    </div>
-                    <h4 className='contact-information-header'>Contact Information</h4>
-                    <div className="contact-group">
-                        <div className="form-group">
-                            <label>Email Address</label>
-                            <input 
-                                type="email" 
-                                className="form-control light-theme"
-                                value={formData.contactInfo.email}
-                                onChange={(e) => handleInputChange(e, 'contactInfo', 'email')}
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Phone Number *</label>
-                            <input 
-                                type="tel" 
-                                className="form-control light-theme"
-                                value={formData.contactInfo.phoneNumber}
-                                onChange={(e) => handleInputChange(e, 'contactInfo', 'phoneNumber')}
-                                required
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
-                            />
-                        </div>
+                        {hasError('personalInfo', 'age') && 
+                            <div className="invalid-feedback">{getErrorMessage('personalInfo', 'age')}</div>
+                        }
                     </div>
 
-                    <div className='civil-and-employment-status'>
-                        <div className="form-group-small">
-                            <label>Civil Status</label>
-                            <select 
-                                className="form-control light-theme"
-                                value={formData.personalInfo.civilStatus}
-                                onChange={(e) => handleInputChange(e, 'personalInfo', 'civilStatus')}
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
-                            >
-                                <option value="">Select Status</option>
-                                <option value="single">Single</option>
-                                <option value="married">Married</option>
-                                <option value="widowed">Widowed</option>
-                                <option value="divorced">Divorced</option>
-                            </select>
-                        </div>
-
-                        <div className="form-group-small">
-                            <label>Employment Status</label>
-                            <select 
-                                className="form-control light-theme"
-                                value={formData.personalInfo.employmentStatus}
-                                onChange={(e) => handleInputChange(e, 'personalInfo', 'employmentStatus')}
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
-                            >
-                                <option value="">Select Status</option>
-                                <option value="employed">Employed</option>
-                                <option value="unemployed">Unemployed</option>
-                                <option value="self-employed">Self-Employed</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="right-section">
-                    <div className="photo-section">
-                        <div className="patient-photo">
-                            <img src="placeholder.jpg" alt="Patient Photo" />
-                        </div>
-                        <div className="photo-buttons">
-                            <button className="btn-upload">Upload</button>
-                            <button className="btn-clear">Clear</button>
-                        </div>
+                    <div className="form-group">
+                        <label>Civil Status</label>
+                        <select 
+                            className="form-control light-theme"
+                            value={formData.personalInfo.civilStatus}
+                            onChange={(e) => handleInputChange(e, 'personalInfo', 'civilStatus')}
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                        >
+                            <option value="">Select Civil Status</option>
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Divorced">Divorced</option>
+                            <option value="Widowed">Widowed</option>
+                            <option value="Separated">Separated</option>
+                        </select>
                     </div>
 
-                    <div className="medical-info">
-                        <h3>Medical Information</h3>
-                        <div className="form-group">
-                            <label>Height (cm)</label>
-                            <input 
-                                type="number" 
-                                className="form-control light-theme"
-                                value={formData.medicalInfo.height}
-                                onChange={(e) => handleInputChange(e, 'medicalInfo', 'height')}
-                                min="0"
-                                step="0.1"
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Weight (kg)</label>
-                            <input 
-                                type="number" 
-                                className="form-control light-theme"
-                                value={formData.medicalInfo.weight}
-                                onChange={(e) => handleInputChange(e, 'medicalInfo', 'weight')}
-                                min="0"
-                                step="0.1"
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>BMI</label>
-                            <input 
-                                type="number" 
-                                className="form-control light-theme" 
-                                disabled
-                                value={formData.medicalInfo.bmi}
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
-                            />
-                        </div>
-                        <div className="form-group-small">
-                            <label>Blood Type</label>
-                            <select 
-                                className="form-control light-theme"
-                                value={formData.medicalInfo.bloodType}
-                                onChange={(e) => handleInputChange(e, 'medicalInfo', 'bloodType')}
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
-                            >
-                                <option value="">Select Blood Type</option>
-                                <option value="A+">A+</option>
-                                <option value="A-">A-</option>
-                                <option value="B+">B+</option>
-                                <option value="B-">B-</option>
-                                <option value="O+">O+</option>
-                                <option value="O-">O-</option>
-                                <option value="AB+">AB+</option>
-                                <option value="AB-">AB-</option>
-                            </select>
-                        </div>
+                    <div className="form-group">
+                        <label>Employment Status</label>
+                        <select 
+                            className="form-control light-theme"
+                            value={formData.personalInfo.employmentStatus}
+                            onChange={(e) => handleInputChange(e, 'personalInfo', 'employmentStatus')}
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                        >
+                            <option value="">Select Employment Status</option>
+                            <option value="Employed">Employed</option>
+                            <option value="Unemployed">Unemployed</option>
+                            <option value="Self-Employed">Self-Employed</option>
+                            <option value="Student">Student</option>
+                            <option value="Retired">Retired</option>
+                        </select>
+                    </div>
+
+                    <h4>Contact Information</h4>
+                    <div className="form-group">
+                        <label>Email</label>
+                        <input 
+                            type="email" 
+                            className={`form-control light-theme ${hasError('contactInfo', 'email') ? 'is-invalid' : ''}`}
+                            value={formData.contactInfo.email}
+                            onChange={(e) => handleInputChange(e, 'contactInfo', 'email')}
+                            placeholder="example@email.com"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                        />
+                        {hasError('contactInfo', 'email') && 
+                            <div className="invalid-feedback">{getErrorMessage('contactInfo', 'email')}</div>
+                        }
+                    </div>
+
+                    <div className="form-group">
+                        <label>Phone Number *</label>
+                        <input 
+                            type="tel" 
+                            className={`form-control light-theme ${hasError('contactInfo', 'phoneNumber') ? 'is-invalid' : ''}`}
+                            value={formData.contactInfo.phoneNumber}
+                            onChange={(e) => handleInputChange(e, 'contactInfo', 'phoneNumber')}
+                            placeholder="+63 XXX XXX XXXX"
+                            required
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                        />
+                        {hasError('contactInfo', 'phoneNumber') && 
+                            <div className="invalid-feedback">{getErrorMessage('contactInfo', 'phoneNumber')}</div>
+                        }
+                    </div>
+
+                    <h4>Medical Information</h4>
+                    <div className="form-group">
+                        <label>Height (cm)</label>
+                        <input 
+                            type="number" 
+                            className={`form-control light-theme ${hasError('medicalInfo', 'height') ? 'is-invalid' : ''}`}
+                            value={formData.medicalInfo.height}
+                            onChange={(e) => handleInputChange(e, 'medicalInfo', 'height')}
+                            min="1" 
+                            max="300"
+                            step="0.1"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                        />
+                        {hasError('medicalInfo', 'height') && 
+                            <div className="invalid-feedback">{getErrorMessage('medicalInfo', 'height')}</div>
+                        }
+                    </div>
+
+                    <div className="form-group">
+                        <label>Weight (kg)</label>
+                        <input 
+                            type="number" 
+                            className={`form-control light-theme ${hasError('medicalInfo', 'weight') ? 'is-invalid' : ''}`}
+                            value={formData.medicalInfo.weight}
+                            onChange={(e) => handleInputChange(e, 'medicalInfo', 'weight')}
+                            min="1" 
+                            max="700"
+                            step="0.1"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                        />
+                        {hasError('medicalInfo', 'weight') && 
+                            <div className="invalid-feedback">{getErrorMessage('medicalInfo', 'weight')}</div>
+                        }
+                    </div>
+
+                    <div className="form-group">
+                        <label>BMI</label>
+                        <input 
+                            type="number" 
+                            className={`form-control light-theme ${hasError('medicalInfo', 'bmi') ? 'is-invalid' : ''}`}
+                            value={formData.medicalInfo.bmi}
+                            onChange={(e) => handleInputChange(e, 'medicalInfo', 'bmi')}
+                            readOnly
+                            style={{ backgroundColor: '#f9f9f9', color: '#000000' }}
+                        />
+                        {hasError('medicalInfo', 'bmi') && 
+                            <div className="invalid-feedback">{getErrorMessage('medicalInfo', 'bmi')}</div>
+                        }
+                    </div>
+
+                    <div className="form-group">
+                        <label>Blood Type</label>
+                        <select 
+                            className="form-control light-theme"
+                            value={formData.medicalInfo.bloodType}
+                            onChange={(e) => handleInputChange(e, 'medicalInfo', 'bloodType')}
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                        >
+                            <option value="">Select Blood Type</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="Unknown">Unknown</option>
+                        </select>
                     </div>
                 </div>
             </div>
-            <div className="form-actions">
-                <button className="btn-register" onClick={handleSubmit}>
-                    Register Patient
+            <div className="button-section">
+                <button 
+                    className="submit-btn" 
+                    onClick={handleSubmit}
+                    disabled={isSubmitting} 
+                >
+                    {isSubmitting ? 'Registering...' : 'Register Patient'}
                 </button>
             </div>
         </div>
