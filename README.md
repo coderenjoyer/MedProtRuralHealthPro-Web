@@ -11,4 +11,19 @@ https://medium.com/@navanitvishwakarma790/mastering-react-router-dom-with-vite-a
 for lorenz na samok kaayu  - npm install @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fullcalendar/interaction @fullcalendar/list
 - npm i framer-motion
 
-- MUI
+ADMIN
+Patient Database color and patient profile
+medicine inventory// reused
+
+FRONT DESK
+Manage Inventory //copy paste from v0.dev in front desk
+Use front desk appointments
+
+Doctor
+Logic - patient diagnosis
+Appointments reused (front desk)
+remove calendar
+
+DENTIST
+Logic - dentist
+
