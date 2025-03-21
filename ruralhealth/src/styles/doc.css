@@ -407,11 +407,13 @@
     width: 100%;
     padding: 12px 18px;
     background-color: #4dd0e1;
-    color: black;
+    color: black !important;
     border: 2px solid transparent;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
+    justify-content: center;
+    transition: padding 0.3s ease;
   }
   
   
@@ -461,22 +463,6 @@
     gap: 10px;
   }
   
-  .sidebar-button {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 18px;
-    background-color: #4dd0e1;
-    color: black;
-    border: 2px solid transparent;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    justify-content: center;
-    transition: padding 0.3s ease;
-  }
-  
   .sidebar-button:hover {
     background-color: #00bcd4;
     transform: translateY(-2px);
@@ -486,6 +472,11 @@
   .sidebar-button.selected {
     background-color: #e0f7fa;
     border: 2px solid #4dd0e1;
+    color: black !important;
+  }
+  
+  .sidebar-button span {
+    color: black !important;
   }
   
   .sidebar-footer {

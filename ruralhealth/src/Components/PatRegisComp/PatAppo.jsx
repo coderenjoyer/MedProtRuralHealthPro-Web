@@ -271,6 +271,7 @@ function Appointments() {
                             value={appointmentForm.patientNo}
                             onChange={handleInputChange}
                             disabled={appointmentForm.patientNo !== ''}
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                     </div>
                 </div>
@@ -312,6 +313,7 @@ function Appointments() {
                                 value={appointmentForm.lastName}
                                 onChange={handleInputChange}
                                 required 
+                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
                             />
                             {formErrors.lastName && (
                                 <div className="invalid-feedback">{formErrors.lastName}</div>
@@ -327,6 +329,7 @@ function Appointments() {
                                 value={appointmentForm.firstName}
                                 onChange={handleInputChange}
                                 required
+                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
                             />
                             {formErrors.firstName && (
                                 <div className="invalid-feedback">{formErrors.firstName}</div>
@@ -341,6 +344,7 @@ function Appointments() {
                                 className="form-control"
                                 value={appointmentForm.middleName}
                                 onChange={handleInputChange}
+                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
                             />
                         </div>
                     </div>
@@ -354,6 +358,7 @@ function Appointments() {
                             value={appointmentForm.email}
                             onChange={handleInputChange}
                             placeholder="example@email.com"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         {formErrors.email && (
                             <div className="invalid-feedback">{formErrors.email}</div>
@@ -370,6 +375,7 @@ function Appointments() {
                             onChange={handleInputChange}
                             placeholder="+63 XXX XXX XXXX"
                             required
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         {formErrors.phone && (
                             <div className="invalid-feedback">{formErrors.phone}</div>
@@ -386,6 +392,7 @@ function Appointments() {
                             onChange={handleInputChange}
                             min={new Date().toISOString().split('T')[0]}
                             required
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         {formErrors.date && (
                             <div className="invalid-feedback">{formErrors.date}</div>
@@ -401,6 +408,7 @@ function Appointments() {
                             value={appointmentForm.time}
                             onChange={handleInputChange}
                             required
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         {formErrors.time && (
                             <div className="invalid-feedback">{formErrors.time}</div>
@@ -416,6 +424,7 @@ function Appointments() {
                             onChange={handleInputChange}
                             rows="3"
                             required
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         ></textarea>
                         {formErrors.description && (
                             <div className="invalid-feedback">{formErrors.description}</div>
@@ -453,6 +462,7 @@ function Appointments() {
                             className="search-input"
                             value={searchTerm}
                             onChange={handleSearchChange}
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         <button className="search-button">
                             <Search size={20} />
@@ -573,6 +583,77 @@ function Appointments() {
                     background-color: #f8f9fa;
                     border-radius: 4px;
                     color: #6c757d;
+                }
+                
+                input, select, textarea, .form-control {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    border-color: #ced4da !important;
+                }
+                
+                input:focus, select:focus, textarea:focus, .form-control:focus {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+                }
+                
+                .appointments-container {
+                    background-color: #f8f9fa !important;
+                }
+                
+                .search-input {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                }
+                
+                .calendar-section {
+                    background-color: #ffffff !important;
+                }
+                
+                .react-calendar {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                }
+                
+                .react-calendar button {
+                    color: #000000 !important;
+                }
+                
+                .react-calendar__tile--active,
+                .react-calendar__tile--active:enabled:hover,
+                .react-calendar__tile--active:enabled:focus {
+                    background-color: #007bff !important;
+                    color: #ffffff !important;
+                }
+                
+                table {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                }
+                
+                th {
+                    background-color: #f8f9fa !important;
+                    color: #000000 !important;
+                }
+                
+                .no-results, .no-appointments {
+                    background-color: #f8f9fa !important;
+                    color: #6c757d !important;
+                }
+                
+                .confirm-btn {
+                    background-color: #007bff !important;
+                    color: #ffffff !important;
+                }
+                
+                .clear-btn {
+                    background-color: #6c757d !important;
+                    color: #ffffff !important;
+                }
+                
+                .search-button {
+                    background-color: #007bff !important;
+                    color: #ffffff !important;
                 }
             `}</style>
         </div>

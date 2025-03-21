@@ -207,7 +207,9 @@ function PatientSearch() {
                             padding: '8px 12px',
                             border: '1px solid #ddd',
                             borderRadius: '4px',
-                            width: '250px'
+                            width: '250px',
+                            backgroundColor: '#ffffff',
+                            color: '#000000'
                         }}
                     />
                     <button 
@@ -494,6 +496,45 @@ function PatientSearch() {
                     </div>
                 </div>
             )}
+            
+            <style jsx>{`
+                input, select, textarea {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    border-color: #ced4da !important;
+                }
+                
+                input:focus, select:focus, textarea:focus {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    border-color: #80bdff !important;
+                    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+                }
+                
+                table {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                }
+                
+                th {
+                    background-color: #f8f9fa !important;
+                    color: #000000 !important;
+                }
+                
+                button {
+                    color: #ffffff !important;
+                }
+                
+                .view-btn {
+                    background-color: #28a745 !important;
+                    border-color: #28a745 !important;
+                }
+                
+                .retry-btn {
+                    background-color: #007bff !important;
+                    border-color: #007bff !important;
+                }
+            `}</style>
         </div>
     );
 }

@@ -387,7 +387,7 @@ function PatientInformation({ onRegister, onError }) {
                                 value={formData.lastName}
                                 onChange={(e) => handleInputChange(e, null, 'lastName')}
                                 required
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                                style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                             />
                             {hasError(null, 'lastName') && 
                                 <div className="invalid-feedback">{getErrorMessage(null, 'lastName')}</div>
@@ -401,7 +401,7 @@ function PatientInformation({ onRegister, onError }) {
                                 value={formData.firstName}
                                 onChange={(e) => handleInputChange(e, null, 'firstName')}
                                 required
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                                style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                             />
                             {hasError(null, 'firstName') && 
                                 <div className="invalid-feedback">{getErrorMessage(null, 'firstName')}</div>
@@ -414,7 +414,7 @@ function PatientInformation({ onRegister, onError }) {
                                 className="form-control light-theme"
                                 value={formData.middleName}
                                 onChange={(e) => handleInputChange(e, null, 'middleName')}
-                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                                style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                             />
                         </div>
                     </div>
@@ -427,7 +427,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.address.street}
                             onChange={(e) => handleInputChange(e, 'address', 'street')}
                             required
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('address', 'street') && 
                             <div className="invalid-feedback">{getErrorMessage('address', 'street')}</div>
@@ -441,7 +441,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.address.barangay}
                             onChange={(e) => handleInputChange(e, 'address', 'barangay')}
                             required
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         >
                             <option value="">Select Barangay</option>
                             <option value="Poblacion">Poblacion</option>
@@ -468,7 +468,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.address.municipality}
                             onChange={(e) => handleInputChange(e, 'address', 'municipality')}
                             required
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('address', 'municipality') && 
                             <div className="invalid-feedback">{getErrorMessage('address', 'municipality')}</div>
@@ -483,7 +483,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.address.province}
                             onChange={(e) => handleInputChange(e, 'address', 'province')}
                             required
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('address', 'province') && 
                             <div className="invalid-feedback">{getErrorMessage('address', 'province')}</div>
@@ -497,7 +497,7 @@ function PatientInformation({ onRegister, onError }) {
                             className={`form-control light-theme ${hasError('address', 'zipcode') ? 'is-invalid' : ''}`}
                             value={formData.address.zipcode}
                             onChange={(e) => handleInputChange(e, 'address', 'zipcode')}
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('address', 'zipcode') && 
                             <div className="invalid-feedback">{getErrorMessage('address', 'zipcode')}</div>
@@ -515,7 +515,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.personalInfo.birthdate}
                             onChange={(e) => handleInputChange(e, 'personalInfo', 'birthdate')}
                             required
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                             max={new Date().toISOString().split('T')[0]} // Set max date to today
                         />
                         {hasError('personalInfo', 'birthdate') && 
@@ -530,7 +530,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.personalInfo.gender}
                             onChange={(e) => handleInputChange(e, 'personalInfo', 'gender')}
                             required
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         >
                             <option value="">Select Gender</option>
                             <option value="Male">Male</option>
@@ -552,7 +552,7 @@ function PatientInformation({ onRegister, onError }) {
                             required
                             min="0"
                             max="150"
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('personalInfo', 'age') && 
                             <div className="invalid-feedback">{getErrorMessage('personalInfo', 'age')}</div>
@@ -565,7 +565,7 @@ function PatientInformation({ onRegister, onError }) {
                             className="form-control light-theme"
                             value={formData.personalInfo.civilStatus}
                             onChange={(e) => handleInputChange(e, 'personalInfo', 'civilStatus')}
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         >
                             <option value="">Select Civil Status</option>
                             <option value="Single">Single</option>
@@ -582,7 +582,7 @@ function PatientInformation({ onRegister, onError }) {
                             className="form-control light-theme"
                             value={formData.personalInfo.employmentStatus}
                             onChange={(e) => handleInputChange(e, 'personalInfo', 'employmentStatus')}
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         >
                             <option value="">Select Employment Status</option>
                             <option value="Employed">Employed</option>
@@ -602,7 +602,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.contactInfo.email}
                             onChange={(e) => handleInputChange(e, 'contactInfo', 'email')}
                             placeholder="example@email.com"
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('contactInfo', 'email') && 
                             <div className="invalid-feedback">{getErrorMessage('contactInfo', 'email')}</div>
@@ -618,7 +618,7 @@ function PatientInformation({ onRegister, onError }) {
                             onChange={(e) => handleInputChange(e, 'contactInfo', 'phoneNumber')}
                             placeholder="+63 XXX XXX XXXX"
                             required
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('contactInfo', 'phoneNumber') && 
                             <div className="invalid-feedback">{getErrorMessage('contactInfo', 'phoneNumber')}</div>
@@ -636,7 +636,7 @@ function PatientInformation({ onRegister, onError }) {
                             min="1" 
                             max="300"
                             step="0.1"
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('medicalInfo', 'height') && 
                             <div className="invalid-feedback">{getErrorMessage('medicalInfo', 'height')}</div>
@@ -653,7 +653,7 @@ function PatientInformation({ onRegister, onError }) {
                             min="1" 
                             max="700"
                             step="0.1"
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('medicalInfo', 'weight') && 
                             <div className="invalid-feedback">{getErrorMessage('medicalInfo', 'weight')}</div>
@@ -668,7 +668,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.medicalInfo.bmi}
                             onChange={(e) => handleInputChange(e, 'medicalInfo', 'bmi')}
                             readOnly
-                            style={{ backgroundColor: '#f9f9f9', color: '#000000' }}
+                            style={{ backgroundColor: '#f9f9f9', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('medicalInfo', 'bmi') && 
                             <div className="invalid-feedback">{getErrorMessage('medicalInfo', 'bmi')}</div>
@@ -681,7 +681,7 @@ function PatientInformation({ onRegister, onError }) {
                             className="form-control light-theme"
                             value={formData.medicalInfo.bloodType}
                             onChange={(e) => handleInputChange(e, 'medicalInfo', 'bloodType')}
-                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         >
                             <option value="">Select Blood Type</option>
                             <option value="A+">A+</option>
@@ -702,10 +702,53 @@ function PatientInformation({ onRegister, onError }) {
                     className="submit-btn" 
                     onClick={handleSubmit}
                     disabled={isSubmitting} 
+                    style={{ backgroundColor: '#007bff', color: '#ffffff', border: 'none' }}
                 >
                     {isSubmitting ? 'Registering...' : 'Register Patient'}
                 </button>
             </div>
+            
+            <style jsx>{`
+                .form-control {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    border-color: #ced4da !important;
+                }
+                
+                .form-control:focus {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+                }
+                
+                .form-control:disabled,
+                .form-control[readonly] {
+                    background-color: #f9f9f9 !important;
+                }
+                
+                .is-invalid {
+                    border-color: #dc3545 !important;
+                    background-color: #fff8f8 !important;
+                }
+                
+                select.form-control option {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                }
+
+                /* Fix for number input spinners */
+                input[type="number"]::-webkit-inner-spin-button, 
+                input[type="number"]::-webkit-outer-spin-button {
+                    color: white !important;
+                    background-color: white !important;
+                    opacity: 1 !important;
+                }
+                
+                /* Firefox */
+                input[type="number"] {
+                    -moz-appearance: textfield;
+                }
+            `}</style>
         </div>
     );
 }

@@ -313,6 +313,7 @@ function ManageInventory() {
                             value={medicineForm.medicineId}
                             onChange={handleInputChange}
                             disabled={true}
+                            style={{ backgroundColor: '#f9f9f9', color: '#000000' }}
                         />
                     </div>
                 </div>
@@ -334,6 +335,7 @@ function ManageInventory() {
                             onChange={handleInputChange}
                             disabled={!!medicineForm.medicineId}
                             required
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         {formErrors.name && (
                             <div className="invalid-feedback">{formErrors.name}</div>
@@ -348,6 +350,7 @@ function ManageInventory() {
                             className="form-control" 
                             value={medicineForm.brand}
                             onChange={handleInputChange}
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                     </div>
 
@@ -359,6 +362,7 @@ function ManageInventory() {
                             rows="3"
                             value={medicineForm.description}
                             onChange={handleInputChange}
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         ></textarea>
                     </div>
 
@@ -373,6 +377,7 @@ function ManageInventory() {
                             min="1"
                             step="1"
                             required
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         {formErrors.quantity && (
                             <div className="invalid-feedback">{formErrors.quantity}</div>
@@ -388,6 +393,7 @@ function ManageInventory() {
                             value={medicineForm.expiryDate}
                             onChange={handleInputChange}
                             min={new Date().toISOString().split('T')[0]}
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         {formErrors.expiryDate && (
                             <div className="invalid-feedback">{formErrors.expiryDate}</div>
@@ -441,6 +447,7 @@ function ManageInventory() {
                             className="search-input"
                             value={searchTerm}
                             onChange={handleSearchChange}
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         <button className="search-button">
                             <Search size={20} />
@@ -529,6 +536,96 @@ function ManageInventory() {
                 
                 .low-stock {
                     background-color: #fff3cd;
+                }
+                
+                /* New styles to ensure white background */
+                input, select, textarea, .form-control {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    border-color: #ced4da !important;
+                }
+                
+                input:focus, select:focus, textarea:focus, .form-control:focus {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+                }
+                
+                input:disabled, select:disabled, textarea:disabled, .form-control:disabled {
+                    background-color: #f9f9f9 !important;
+                    color: #000000 !important;
+                }
+                
+                .inventory-container {
+                    background-color: #f8f9fa !important;
+                }
+                
+                .search-input {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                }
+                
+                table {
+                    background-color: #ffffff !important;
+                    color: #000000 !important;
+                }
+                
+                th {
+                    background-color: #f8f9fa !important;
+                    color: #000000 !important;
+                }
+                
+                .medicine-management, .medicine-list {
+                    background-color: #ffffff !important;
+                }
+                
+                .add-btn {
+                    background-color: #28a745 !important;
+                    color: #ffffff !important;
+                    border-color: #28a745 !important;
+                }
+                
+                .update-btn {
+                    background-color: #007bff !important;
+                    color: #ffffff !important;
+                    border-color: #007bff !important;
+                }
+                
+                .remove-btn {
+                    background-color: #dc3545 !important;
+                    color: #ffffff !important;
+                    border-color: #dc3545 !important;
+                }
+                
+                .clear-btn {
+                    background-color: #6c757d !important;
+                    color: #ffffff !important;
+                    border-color: #6c757d !important;
+                }
+                
+                .search-button {
+                    background-color: #007bff !important;
+                    color: #ffffff !important;
+                    border-color: #007bff !important;
+                }
+                
+                .action-btn {
+                    background-color: #17a2b8 !important;
+                    color: #ffffff !important;
+                    border-color: #17a2b8 !important;
+                }
+
+                /* Fix for number input spinners */
+                input[type="number"]::-webkit-inner-spin-button, 
+                input[type="number"]::-webkit-outer-spin-button {
+                    color: white !important;
+                    background-color: white !important;
+                    opacity: 1 !important;
+                }
+                
+                /* Firefox */
+                input[type="number"] {
+                    -moz-appearance: textfield;
                 }
             `}</style>
         </div>
