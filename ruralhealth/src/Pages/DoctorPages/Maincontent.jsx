@@ -1,19 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
+import { ref, onValue } from "firebase/database";
+import { database } from "../../Firebase/firebase";
 
 const Container = styled.div`
-  flex-grow: 1;
-  padding: 20px 40px;
-  font-family: Arial, sans-serif;
-  background-color: white;
   display: flex;
   flex-direction: column;
-  gap: 30px;
-  height: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background-color: white;
   border-radius: 15px;
   box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.15);
+  height: 100%;
+  overflow: hidden;
+  min-height: 0;
 `;
 
 const Header = styled.h1`
@@ -21,6 +21,8 @@ const Header = styled.h1`
   color: black;
   text-align: center;
   font-weight: bold;
+  margin-bottom: 20px;
+  flex-shrink: 0;
 `;
 
 const SubHeader = styled.h2`
@@ -37,8 +39,12 @@ const Section = styled.div`
   display: flex;
   flex-direction: column;
   gap: 15px;
-  min-height: 250px;
+  flex: 1;
   overflow: hidden;
+  min-height: 0;
+  &:first-of-type {
+    margin-bottom: 20px;
+  }
 `;
 
 const SearchBar = styled.input`
@@ -53,7 +59,7 @@ const SearchBar = styled.input`
 `;
 
 const List = styled.div`
-  max-height: 200px;
+  flex: 1;
   overflow-y: auto;
   padding: 10px;
   border: 1px solid #ddd;
@@ -61,6 +67,7 @@ const List = styled.div`
   background-color: #fdfdfd;
   box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
+  min-height: 0;
 `;
 
 const ListItem = styled.div`
@@ -74,6 +81,10 @@ const ListItem = styled.div`
     background-color: #f1f1f1;
     cursor: pointer;
   }
+  ${props => props.$selected && `
+    background-color: #e0f7fa;
+    border-left: 4px solid #4dd0e1;
+  `}
 `;
 
 const Tooltip = styled.div`
@@ -115,12 +126,46 @@ const NoResults = styled.div`
   margin-top: 10px;
 `;
 
-const MainContentList = () => {
-  const [searchPatient, setSearchPatient] = useState("");
-  const [searchMedicine, setSearchMedicine] = useState("");
-  const [hoveredMedicine, setHoveredMedicine] = useState(null);
+const MainContentList = ({ onPatientSelect }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [patients, setPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [isMinimized, setIsMinimized] = useState(false);
 
-  const patients = ["Howard", "Coward", "John", "Doe", "Jane", "Smith"];
+  useEffect(() => {
+    const patientsRef = ref(database, "rhp/patients");
+    const unsubscribe = onValue(patientsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const patientsList = Object.entries(data).map(([id, patient]) => ({
+          id,
+          ...patient,
+        }));
+        setPatients(patientsList);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handlePatientClick = (patient) => {
+    setSelectedPatient(patient);
+    onPatientSelect(patient);
+    setIsMinimized(true);
+  };
+
+  const handleExpand = () => {
+    setIsMinimized(false);
+    setSelectedPatient(null);
+    onPatientSelect(null);
+  };
+
+  const filteredPatients = patients.filter((patient) =>
+    `${patient.personalInfo.firstName} ${patient.personalInfo.lastName}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
   const medicines = [
     { name: "Aspirin", brand: "Bayer", description: "Pain reliever and anti-inflammatory.", quantity: "50 tablets", expiration: "2025-12-01" },
     { name: "Ibuprofen", brand: "Advil", description: "Used to reduce fever and treat pain.", quantity: "100 tablets", expiration: "2026-06-15" },
@@ -134,91 +179,147 @@ const MainContentList = () => {
     { name: "Hydrochlorothiazide", brand: "Microzide", description: null, quantity: "25 tablets", expiration: null },
   ];
 
-  const filteredPatients = patients.filter((patient) =>
-    patient.toLowerCase().includes(searchPatient.toLowerCase())
-  );
-
   const filteredMedicines = medicines.filter((medicine) =>
-    medicine.name.toLowerCase().includes(searchMedicine.toLowerCase())
+    medicine.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleMouseEnter = (medicine, event) => {
-    const rect = event.target.getBoundingClientRect();
-    setHoveredMedicine({
-      name: medicine.name,
-      brand: medicine.brand,
-      description: medicine.description,
-      quantity: medicine.quantity,
-      expiration: medicine.expiration,
-      $top: rect.top + window.scrollY,
-      $left: rect.right + 10,
-    });
-  };
-
-  const handleMouseLeave = () => setHoveredMedicine(null);
 
   return (
     <Container>
-      <Header>MEDICAL HISTORY</Header>
-      <Section>
-        <SubHeader>REGISTERED PATIENTS</SubHeader>
-        <SearchBar
-          type="text"
-          value={searchPatient}
-          onChange={(e) => setSearchPatient(e.target.value)}
-          placeholder="Search patients..."
-        />
-        <List>
-          {filteredPatients.length > 0 ? (
-            filteredPatients.map((patient, index) => (
-              <ListItem key={index}>{`${index + 1}.) ${patient}`}</ListItem>
-            ))
-          ) : (
-            <NoResults>No patients found</NoResults>
-          )}
-        </List>
-      </Section>
-
-      <Section>
-        <SubHeader>AVAILABLE MEDICINES</SubHeader>
-        <SearchBar
-          type="text"
-          value={searchMedicine}
-          onChange={(e) => setSearchMedicine(e.target.value)}
-          placeholder="Search medicines..."
-        />
-        <List>
-          {filteredMedicines.length > 0 ? (
-            filteredMedicines.map((medicine, index) => (
-              <ListItem
-                key={index}
-                onMouseEnter={(e) => handleMouseEnter(medicine, e)}
-                onMouseLeave={handleMouseLeave}
+      <Header>PATIENT LIST</Header>
+      {isMinimized ? (
+        <MinimizedView>
+          <MinimizedHeader>Selected Patient</MinimizedHeader>
+          <SelectedPatientInfo>
+            <PatientName>
+              {selectedPatient?.personalInfo.firstName} {selectedPatient?.personalInfo.lastName}
+            </PatientName>
+            <ExpandButton onClick={handleExpand}>Expand List</ExpandButton>
+          </SelectedPatientInfo>
+        </MinimizedView>
+      ) : (
+        <>
+          <SearchContainer>
+            <SearchInput
+              type="text"
+              placeholder="Search patients..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </SearchContainer>
+          <PatientList>
+            {filteredPatients.map((patient) => (
+              <PatientItem
+                key={patient.id}
+                onClick={() => handlePatientClick(patient)}
+                $isSelected={selectedPatient?.id === patient.id}
               >
-                {`${index + 1}.) ${medicine.name}`}
-              </ListItem>
-            ))
-          ) : (
-            <NoResults>No medicines found</NoResults>
-          )}
-        </List>
-      </Section>
-
-      {hoveredMedicine && (
-        <Tooltip
-          $left={hoveredMedicine.$left}
-          $top={hoveredMedicine.$top}
-          $isVisible={true}
-        >
-          <h4>{hoveredMedicine.name}</h4>
-          <p><strong>Brand:</strong> {hoveredMedicine.brand || "N/A"}</p>
-          <p><strong>Description:</strong> {hoveredMedicine.description || "N/A"}</p>
-          <p><strong>Quantity:</strong> {hoveredMedicine.quantity || "N/A"}</p>
-          <p><strong>Expiration:</strong> {hoveredMedicine.expiration || "N/A"}</p>
-        </Tooltip>
+                <PatientName>
+                  {patient.personalInfo.firstName} {patient.personalInfo.lastName}
+                </PatientName>
+                <PatientDetails>
+                  <DetailItem>Age: {patient.personalInfo.age}</DetailItem>
+                  <DetailItem>Gender: {patient.personalInfo.gender}</DetailItem>
+                </PatientDetails>
+              </PatientItem>
+            ))}
+          </PatientList>
+        </>
       )}
     </Container>
   );
 };
+
+const MinimizedView = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  height: 100%;
+`;
+
+const MinimizedHeader = styled.h3`
+  margin: 0 0 10px 0;
+  color: #666;
+  font-size: 1rem;
+`;
+
+const SelectedPatientInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const ExpandButton = styled.button`
+  padding: 8px 16px;
+  background-color: #4dd0e1;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #00bcd4;
+  }
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 1rem;
+  box-sizing: border-box;
+`;
+
+const PatientList = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background-color: #fdfdfd;
+  box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  min-height: 0;
+`;
+
+const PatientItem = styled.div`
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  border-radius: 8px;
+  &:last-child {
+    border-bottom: none;
+  }
+  &:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+  }
+  ${props => props.$isSelected && `
+    background-color: #e0f7fa;
+    border-left: 4px solid #4dd0e1;
+  `}
+`;
+
+const PatientName = styled.h3`
+  margin: 0 0 5px 0;
+  font-size: 1rem;
+`;
+
+const PatientDetails = styled.div`
+  display: flex;
+  gap: 10px;
+`;
+
+const DetailItem = styled.span`
+  font-size: 0.9rem;
+`;
 
 export default MainContentList;

@@ -3,7 +3,6 @@ import styled from "styled-components"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom" 
 import { Stethoscope, Calendar, LogOut, User } from "lucide-react"
-import Appo from "../../Components/PatRegisComp/PatAppo"
 
 const SidebarContainer = styled.aside`
   width: 240px;

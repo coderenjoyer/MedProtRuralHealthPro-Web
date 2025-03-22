@@ -21,8 +21,8 @@ const DashboardContainer = styled.div`
 
 const MainContent = styled.main`
   flex: 1;
-  max-width: 1200px; /* ✅ Restrict max width */
-  margin: 0 auto; /* ✅ Center horizontally */
+  max-width: 1200px; 
+  margin: 0 auto;
   margin-left: ${(props) => (props.$isSidebarOpen ? "200px" : "auto")};
   padding: 20px;
   transition: margin-left 0.3s ease;

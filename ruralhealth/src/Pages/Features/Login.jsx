@@ -11,9 +11,9 @@ const Container = styled.div`
   height: 100vh;
   width: 100vw;
   background: url("/bgbgrh.png") no-repeat center center;
-  background-size: cover;
-  background-attachment: fixed;
-`;
+  background-size: cover; 
+  background-attachment: fixed; 
+`;  
 
 
 const LoginBox = styled.div`

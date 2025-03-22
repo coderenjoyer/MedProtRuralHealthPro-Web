@@ -7,7 +7,6 @@ import GlobalStyle from "../../styles/specappglobal.js"
 import theme from "../../styles/spec.theme.js"
 import Sidebar from "../../Components/SpecialistComp/Sidebar.jsx"
 import DentalExamination from "../../Components/SpecialistComp/DentExam.jsx"
-import PatientRegistry from "../../Components/SpecialistComp/PatientReg.jsx"
 import Appo from "../../Components/PatRegisComp/PatAppo"
 import { AppContainer, MainContent } from "../../styles/specstyleapp.js"
 
@@ -29,15 +28,15 @@ function Specialist() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
                 style={{
-                  display: "flex",
-                  gap: "20px",
                   width: "100%",
                   height: "100%",
-                  overflow: "hidden",
+                  overflow: "auto",
+                  padding: "1rem",
+                  display: "flex",
+                  gap: "1rem",
                 }}
               >
                 <DentalExamination />
-                <PatientRegistry />
               </motion.div>
             )}
             {activeView === "appointments" && (
@@ -47,7 +46,11 @@ function Specialist() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
-                style={{ height: "100%" }}
+                style={{ 
+                  height: "100%",
+                  overflow: "auto",
+                  padding: "1rem",
+                }}
               >
                 <Appo />
               </motion.div>

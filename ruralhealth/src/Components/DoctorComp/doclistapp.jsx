@@ -130,7 +130,7 @@ const MClistappointment = () => {
     { name: "Jane Smith", date: "2024-03-12", time: "11:15 AM", description: "Routine vaccination." },
     { name: "Emily Clark", date: "2024-04-01", time: "2:00 PM", description: "Pediatric appointment." },
   ];
-
+  
   const filteredPatients = registeredPatients.filter((patient) =>
     patient.toLowerCase().includes(searchPatient.toLowerCase())
   );
