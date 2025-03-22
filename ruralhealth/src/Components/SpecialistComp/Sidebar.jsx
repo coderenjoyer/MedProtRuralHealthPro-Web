@@ -12,6 +12,8 @@ const SidebarContainer = styled.aside`
   flex-direction: column;
   box-shadow: ${({ theme }) => theme.shadows.lg};
   z-index: 10;
+  height: 100vh;
+  position: relative;
 `
 
 const Logo = styled.div`
@@ -45,6 +47,24 @@ const NavItems = styled.nav`
   display: flex;
   flex-direction: column;
   padding: 2rem 0;
+  overflow-y: auto;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
 `
 
 const NavItem = styled(motion.button)`
@@ -93,6 +113,11 @@ const IconWrapper = styled.span`
 const Footer = styled.div`
   padding: 1rem 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, #4FC3F7 0%, #29b6f6 100%);
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
 `
 
 const LogoutButton = styled(motion.button)`
@@ -111,6 +136,10 @@ const LogoutButton = styled(motion.button)`
 
   &:hover {
     background-color: rgba(79, 195, 247, 0.3);
+  }
+
+  svg {
+    margin-right: 0.75rem;
   }
 `
 
