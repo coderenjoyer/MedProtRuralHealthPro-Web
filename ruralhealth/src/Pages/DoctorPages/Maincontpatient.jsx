@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import Select from "react-select";
 import { Camera } from "lucide-react";
+import { ref, onValue, update } from "firebase/database";
+import { database } from "../../Firebase/firebase";
+import { toast } from "react-toastify";
 
 const medicines = [
   "Aspirin", "Ibuprofen", "Paracetamol", "Amoxicillin", "Metformin", 
@@ -11,63 +14,46 @@ const medicines = [
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 30px;
+  padding: 20px;
   font-family: Arial, sans-serif;
   background-color: #fff;
   border-radius: 10px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-  max-width: 100%;
-  height: 95%;
-  overflow-y: auto;
+  height: 100%;
+  overflow: hidden;
+  min-height: 0;
+  box-sizing: border-box;
 `;
 
 const Header = styled.h1`
   font-size: 2.4rem;
   color: #111;
   font-weight: bold;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
   text-transform: uppercase;
   text-align: left;
+  flex-shrink: 0;
 `;
 
 const ContentRow = styled.div`
   display: flex;
   flex: 1;
-  gap: 40px;
+  gap: 20px;
   align-items: flex-start;
+  overflow: hidden;
+  min-height: 0;
+  box-sizing: border-box;
 `;
 
 const LeftSection = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 0.6;
-`;
-
-const PictureUpload = styled.label`
-  width: 220px;
-  height: 220px;
-  border: 3px solid #4dd0e1;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #f9f9f9;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-
-  &:hover {
-    background-color: #e0f7fa;
-    transform: scale(1.05);
-  }
-`;
-
-const PicturePreview = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
+  width: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
+  flex-shrink: 0;
+  box-sizing: border-box;
 `;
 
 const CommentsSection = styled.div`
@@ -94,10 +80,13 @@ const CommentsInput = styled.textarea`
 `;
 
 const DetailsSection = styled.div`
-  flex: 1.4;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  width: 100%;
+  overflow-y: auto;
+  padding-right: 10px;
+  min-width: 400px;
+  box-sizing: border-box;
 `;
 
 const DetailItem = styled.div`
@@ -128,10 +117,14 @@ const FooterRow = styled.div`
   justify-content: space-between;
   gap: 20px;
   margin-top: 20px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
 `;
 
 const Section = styled.div`
   flex: 1;
+  min-width: 200px;
+  max-width: 100%;
 `;
 
 const FooterLabel = styled.h4`
@@ -152,6 +145,9 @@ const QuantityInput = styled.input`
 
 const MedicineList = styled.div`
   margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 `;
 
 const ButtonRow = styled.div`
@@ -159,6 +155,8 @@ const ButtonRow = styled.div`
   justify-content: flex-start;
   gap: 10px;
   margin-top: 20px;
+  flex-shrink: 0;
+  margin-bottom: 20px;
 `;
 
 const Button = styled.button`
@@ -198,12 +196,113 @@ const Button = styled.button`
   }
 `;
 
-const MainContentPatient = () => {
-  const [image, setImage] = useState(null);
+const MedicineTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const TableHeader = styled.th`
+  background-color: #4dd0e1;
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-weight: bold;
+`;
+
+const TableCell = styled.td`
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+`;
+
+const TableRow = styled.tr`
+  &:hover {
+    background-color: #f5f5f5;
+  }
+`;
+
+const MainContentPatient = ({ selectedPatient }) => {
   const [allergies, setAllergies] = useState([]);
   const [plannedMeds, setPlannedMeds] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [selectedButton, setSelectedButton] = useState(null);
+  const [availableMedicines, setAvailableMedicines] = useState([]);
+  const [formData, setFormData] = useState({
+    patientName: "",
+    medicalCare: "",
+    chiefComplaint: "",
+    diagnosis: "",
+    presentIllnesses: "",
+    pastIllnesses: "",
+    comments: ""
+  });
+
+  // Filter out medicines that are selected as allergies
+  const getFilteredMedicines = () => {
+    const allergyValues = allergies.map(med => med.value);
+    return medicines.filter(med => !allergyValues.includes(med.value));
+  };
+
+  // Update planned medicines when allergies change
+  useEffect(() => {
+    const allergyValues = allergies.map(med => med.value);
+    setPlannedMeds(prev => prev.filter(med => !allergyValues.includes(med.value)));
+  }, [allergies]);
+
+  useEffect(() => {
+    // Fetch available medicines from Firebase
+    const medicinesRef = ref(database, "rhp/medicines");
+    const unsubscribeMedicines = onValue(medicinesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const medicinesList = Object.entries(data).map(([id, medicine]) => ({
+          id,
+          ...medicine,
+        }));
+        setAvailableMedicines(medicinesList);
+      }
+    });
+
+    return () => unsubscribeMedicines();
+  }, []);
+
+  useEffect(() => {
+    if (selectedPatient) {
+      // Load patient data when a patient is selected
+      const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
+      const unsubscribe = onValue(patientRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          setFormData(prev => ({
+            ...prev,
+            patientName: `${data.personalInfo.firstName} ${data.personalInfo.lastName}`,
+            medicalCare: data.medicalInfo?.medications?.join(", ") || "",
+            chiefComplaint: "",
+            diagnosis: "",
+            presentIllnesses: data.medicalInfo?.existingConditions?.join(", ") || "",
+            pastIllnesses: "",
+            comments: ""
+          }));
+          setAllergies((data.medicalInfo?.allergies || []).map(med => ({ label: med, value: med })));
+        }
+      });
+
+      return () => unsubscribe();
+    }
+  }, [selectedPatient]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleQuantityChange = (med, value) => {
     setQuantities({ ...quantities, [med]: value });
@@ -213,50 +312,85 @@ const MainContentPatient = () => {
     setAllergies([]);
     setPlannedMeds([]);
     setQuantities({});
-    setImage(null);
     setSelectedButton(null);
-  };
-
-  const handleImageChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+    setFormData({
+      patientName: selectedPatient ? `${selectedPatient.personalInfo.firstName} ${selectedPatient.personalInfo.lastName}` : "",
+      medicalCare: "",
+      chiefComplaint: "",
+      diagnosis: "",
+      presentIllnesses: "",
+      pastIllnesses: "",
+      comments: ""
+    });
   };
 
   const handleButtonClick = (button) => {
     setSelectedButton(button);
     setTimeout(() => setSelectedButton(null), 100);
-  };  
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedPatient) {
+      toast.error("Please select a patient first");
+      return;
+    }
+
+    try {
+      const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
+      const updates = {
+        medicalInfo: {
+          allergies: allergies.map(med => med.value),
+          existingConditions: formData.presentIllnesses.split(",").map(condition => condition.trim()),
+          medications: plannedMeds.map(med => `${med.label} (${quantities[med.value] || 0})`)
+        },
+        registrationInfo: {
+          lastVisit: new Date().toISOString()
+        }
+      };
+
+      await update(patientRef, updates);
+      toast.success("Patient information updated successfully");
+    } catch (error) {
+      console.error("Error updating patient:", error);
+      toast.error("Failed to update patient information");
+    }
+  };
 
   return (
     <Container>
       <Header>PATIENT INFORMATION</Header>
       <ContentRow>
         <LeftSection>
-          <PictureUpload>
-            <input type="file" accept="image/*" hidden onChange={handleImageChange} />
-            {image ? (
-              <PicturePreview src={image} alt="Uploaded Preview" />
-            ) : (
-              <Camera size={54} color="#555" />
-            )}
-          </PictureUpload>
           <CommentsSection>
             <CommentsLabel>OTHER COMMENTS:</CommentsLabel>
-            <CommentsInput placeholder="Enter comments here..." />
+            <CommentsInput 
+              name="comments"
+              value={formData.comments}
+              onChange={handleInputChange}
+              placeholder="Enter comments here..." 
+            />
           </CommentsSection>
         </LeftSection>
   
         <DetailsSection>
-          {["Patient Name", "Medical Care", "Chief Complaint", "Diagnosis", "Present Illnesses", "Past Illnesses"].map((label, index) => (
-            <DetailItem key={index}>
-              <Label>{label.toUpperCase()}:</Label>
-              <InputField type="text" placeholder={`Enter ${label.toLowerCase()}...`} />
+          {[
+            { name: "patientName", label: "Patient Name" },
+            { name: "medicalCare", label: "Medical Care" },
+            { name: "chiefComplaint", label: "Chief Complaint" },
+            { name: "diagnosis", label: "Diagnosis" },
+            { name: "presentIllnesses", label: "Present Illnesses" },
+            { name: "pastIllnesses", label: "Past Illnesses" }
+          ].map((field) => (
+            <DetailItem key={field.name}>
+              <Label>{field.label.toUpperCase()}:</Label>
+              <InputField 
+                type="text" 
+                name={field.name}
+                value={formData[field.name]}
+                onChange={handleInputChange}
+                placeholder={`Enter ${field.label.toLowerCase()}...`}
+                disabled={field.name === "patientName"}
+              />
             </DetailItem>
           ))}
   
@@ -275,7 +409,7 @@ const MainContentPatient = () => {
             <Section>
               <FooterLabel>PLANNED MEDICINES:</FooterLabel>
               <Select 
-                options={medicines} 
+                options={getFilteredMedicines()} 
                 isMulti 
                 value={plannedMeds} 
                 onChange={setPlannedMeds} 
@@ -288,6 +422,7 @@ const MainContentPatient = () => {
                     <QuantityInput 
                       type="number" 
                       placeholder="Qty" 
+                      value={quantities[med.value] || ""}
                       onChange={(e) => handleQuantityChange(med.value, e.target.value)} 
                     />
                   </div>
@@ -295,6 +430,30 @@ const MainContentPatient = () => {
               </MedicineList>
             </Section>
           </FooterRow>
+
+          <Section>
+            <FooterLabel>AVAILABLE MEDICINES:</FooterLabel>
+            <MedicineTable>
+              <thead>
+                <tr>
+                  <TableHeader>Name</TableHeader>
+                  <TableHeader>Brand</TableHeader>
+                  <TableHeader>Quantity</TableHeader>
+                  <TableHeader>Expiry</TableHeader>
+                </tr>
+              </thead>
+              <tbody>
+                {availableMedicines.map((medicine) => (
+                  <TableRow key={medicine.id}>
+                    <TableCell>{medicine.name}</TableCell>
+                    <TableCell>{medicine.brand || "N/A"}</TableCell>
+                    <TableCell>{medicine.quantity || "N/A"}</TableCell>
+                    <TableCell>{medicine.expiration || "N/A"}</TableCell>
+                  </TableRow>
+                ))}
+              </tbody>
+            </MedicineTable>
+          </Section>
   
           <ButtonRow>
             <Button 
@@ -309,9 +468,12 @@ const MainContentPatient = () => {
   
             <Button 
               className={selectedButton === "input" ? "selected" : ""} 
-              onClick={() => handleButtonClick("input")}
+              onClick={() => {
+                handleButtonClick("input");
+                handleSubmit();
+              }}
             >
-              INPUT
+              SAVE
             </Button>
           </ButtonRow>
         </DetailsSection>

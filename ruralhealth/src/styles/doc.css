@@ -3,7 +3,7 @@
     line-height: 1.5;
     font-weight: 400;
     color: black;
-    background-color: #e0f7fa;
+    background-color: #E3F2FD;
   }
   
   /* General Reset */
@@ -15,11 +15,11 @@
   
   a {
     font-weight: 500;
-    color: #4dd0e1;
+    color: black;
     text-decoration: inherit;
   }
   a:hover {
-    color: #26c6da;
+    color: black;
   }
   
   body {
@@ -89,7 +89,7 @@
   
   h2 {
       margin-bottom: 15px;
-      color: #444;
+      color: black;
       font-size: 18px;
   }
   
@@ -98,7 +98,7 @@
     align-items: center;
     gap: 10px;
     padding: 12px 20px;
-    background-color: #4dd0e1;
+    background-color: #81D4FA;
     color: black;
     border: none;
     border-radius: 12px;
@@ -109,7 +109,7 @@
     transition: all 0.2s ease;
   }
   button:hover {
-    background-color: #00bcd4;
+    background-color: #64B5F6;
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
   }
@@ -153,6 +153,7 @@
       display: block;
       margin-bottom: 5px;
       font-weight: 500;
+      color: black;
   }
   
   .form-control {
@@ -161,6 +162,7 @@
     font-size: 1rem;
     border: 1px solid #ddd;
     border-radius: 5px;
+    color: black;
   }
   
   .contact-group {
@@ -178,7 +180,7 @@
   .patient-photo {
     width: 220px;
     height: 220px;
-    border: 3px solid #4dd0e1;
+    border: 3px solid #4FC3F7;
     border-radius: 50%;
     display: flex;
     justify-content: center;
@@ -225,12 +227,14 @@
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    color: black;
   }
   
   .contact-information-header{
     text-align: center;
     margin-bottom: 20px;
     font-size: 20px;
+    color: black;
   }
   
   .form-group-small {
@@ -253,6 +257,7 @@
       text-align: center;
       margin-bottom: 20px;
       font-size: 24px;
+      color: black;
   }
   
   .search-box {
@@ -266,15 +271,26 @@
       padding: 8px;
       border: 1px solid #ddd;
       border-radius: 4px;
+      color: black;
   }
   
   .search-button {
-    background-color: #4dd0e1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: #81D4FA;
     color: black;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
   }
   
-  search-button:hover {
-    background-color: #00bcd4;
+  .search-button:hover {
+    background-color: #64B5F6;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }
   
   .search-results {
@@ -295,21 +311,22 @@
   }
   
   .patients-table th {
-      background-color: #f5f5f5;
+      background-color: #E3F2FD;
+      color: black;
       font-weight: 600;
   }
   
   .view-btn {
       padding: 6px 12px;
-      background-color: #007bff;
-      color: white;
+      background-color: #81D4FA;
+      color: black;
       border: none;
       border-radius: 4px;
       cursor: pointer;
   }
   
   .view-btn:hover {
-      background-color: #0056b3;
+      background-color: #64B5F6;
   }
   
   .header-section {
@@ -329,6 +346,7 @@
   
   .patient-number input {
       background-color: #f5f5f5;
+      color: black;
   }
   
   
@@ -358,23 +376,23 @@
     color: white;
   }
   .update-btn { 
-    background-color: #4dd0e1; 
+    background-color: #81D4FA; 
     color: black;
   }
   .clear-btn { 
-    background-color: #b2ebf2; 
+    background-color: #E3F2FD; 
     color: black;
   }
   .register-btn { 
-    background-color: #00bcd4; 
+    background-color: #81D4FA; 
     color: black;
   }
   
   
   .delete-btn:hover { background-color: #c82333; }
-  .update-btn:hover { background-color: #e0a800; }
-  .clear-btn:hover { background-color: #5a6268; }
-  .register-btn:hover { background-color: #218838; }
+  .update-btn:hover { background-color: #64B5F6; }
+  .clear-btn:hover { background-color: #bdbdbd; }
+  .register-btn:hover { background-color: #64B5F6; }
   
  
   .sidebar-container {
@@ -382,7 +400,7 @@
     top: 0;
     left: 0;
     height: 100vh;
-    background-color: #b2ebf2;
+    background-color: #4FC3F7;
     color: black;
     display: flex;
     flex-direction: column;
@@ -403,14 +421,16 @@
   .sidebar-button {
     display: flex;
     align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 18px;
-    background-color: #4dd0e1;
+    gap: 10px;
+    padding: 12px 20px;
+    background-color: #81D4FA;
     color: black;
-    border: 2px solid transparent;
-    border-radius: 10px;
+    border: none;
+    border-radius: 12px;
     cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
     transition: all 0.2s ease;
   }
   
@@ -432,7 +452,7 @@
     right: -15px; 
     width: 30px;
     height: 30px;
-    background-color: #4dd0e1;
+    background-color: #81D4FA;
     border: none;
     cursor: pointer;
     display: flex;
@@ -444,7 +464,7 @@
   }
   
   .toggle-button:hover {
-    background-color: #00bcd4;
+    background-color: #64B5F6;
   }
   
   .toggle-button svg {
@@ -461,31 +481,15 @@
     gap: 10px;
   }
   
-  .sidebar-button {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 18px;
-    background-color: #4dd0e1;
-    color: black;
-    border: 2px solid transparent;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    justify-content: center;
-    transition: padding 0.3s ease;
-  }
-  
   .sidebar-button:hover {
-    background-color: #00bcd4;
+    background-color: #64B5F6;
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
   }
   
   .sidebar-button.selected {
-    background-color: #e0f7fa;
-    border: 2px solid #4dd0e1;
+    background-color: #E3F2FD;
+    border: 2px solid #4FC3F7;
   }
   
   .sidebar-footer {
@@ -496,12 +500,12 @@
   
   
   .logout-button {
-      background-color: #26c6da !important;
+      background-color: #81D4FA !important;
       color: black !important;
   }
   
   .logout-button:hover {
-      background-color: #00acc1 !important;
+      background-color: #64B5F6 !important;
   }
   
   .logo-container {
@@ -518,6 +522,7 @@
   .logo-text {
     font-size: 24px;
     font-weight: bold;
+    color: black;
   }
   
   .wrapper {
@@ -576,7 +581,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      border: 3px solid #4dd0e1;
+      border: 3px solid #4FC3F7;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
       overflow: hidden;
   }
@@ -649,7 +654,7 @@
   
   .section-title {
       font-size: 24px;
-      color: #333;
+      color: black;
   }
   
   .medicine-id {
@@ -676,7 +681,7 @@
   
   .form-group label {
       font-weight: 500;
-      color: #555;
+      color: black;
   }
   
   .form-control {
@@ -712,12 +717,12 @@
   }
   
   .add-btn {
-      background-color: #4dd0e1;
+      background-color: #81D4FA;
       color: black;
   }
   
   .update-btn {
-      background-color: #ffd700;
+      background-color: #81D4FA;
       color: black;
   }
   
@@ -767,7 +772,7 @@
       align-items: center;
       gap: 8px;
       padding: 8px 16px;
-      background-color: #4dd0e1;
+      background-color: #81D4FA;
       color: black;
       border: none;
       border-radius: 4px;
@@ -776,7 +781,7 @@
   }
   
   .search-button:hover {
-      background-color: #00bcd4;
+      background-color: #64B5F6;
       transform: translateY(-2px);
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }
@@ -800,20 +805,20 @@
   }
   
   .medicine-table th {
-      background-color: #e0f7fa;
-      color: #333;
+      background-color: #E3F2FD;
+      color: black;
       font-weight: 600;
       position: sticky;
       top: 0;
   }
   
   .medicine-table tr:hover {
-      background-color: #f5f5f5;
+      background-color: #E3F2FD;
   }
   
   .action-btn {
       padding: 6px 12px;
-      background-color: #4dd0e1;
+      background-color: #81D4FA;
       color: black;
       border: none;
       border-radius: 4px;
@@ -822,7 +827,7 @@
   }
   
   .action-btn:hover {
-      background-color: #00bcd4;
+      background-color: #64B5F6;
       transform: translateY(-2px);
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }
@@ -883,12 +888,12 @@
       }
   
       & .react-calendar__tile:enabled:hover {
-        background-color: #e0f7fa;
+        background-color: #E3F2FD;
         border-radius: 4px;
       }
   
       & .react-calendar__tile--active {
-        background-color: #4dd0e1 !important;
+        background-color: #4FC3F7 !important;
         color: black;
         border-radius: 4px;
       }
@@ -899,14 +904,14 @@
       }
   
       & .react-calendar__navigation button:hover {
-        background-color: #e0f7fa;
+        background-color: #E3F2FD;
         border-radius: 4px;
       }
   
       & .react-calendar__month-view__weekdays {
         font-weight: bold;
         text-align: center;
-        color: #555;
+        color: black;
       }
   }
   
@@ -919,7 +924,7 @@
   }
   
   .appointment-form h3 {
-      color: #333;
+      color: black;
       margin-bottom: 10px;
   }
   
@@ -931,7 +936,7 @@
   
   .form-group label {
       font-weight: 500;
-      color: #555;
+      color: black;
   }
   
   .button-group {
@@ -951,12 +956,12 @@
   }
   
   .clear-btn {
-      background-color: #b2ebf2;
+      background-color: #E3F2FD;
       color: black;
   }
   
   .confirm-btn {
-      background-color: #4dd0e1;
+      background-color: #81D4FA;
       color: black;
   }
   
@@ -966,7 +971,7 @@
   }
   
   .confirm-btn:hover {
-      background-color: #00bcd4;
+      background-color: #64B5F6;
   }
   
   .calendar-wrapper {
@@ -984,7 +989,7 @@
       justify-content: center; /* Center toggle button text */
       gap: 8px;
       padding: 10px;
-      background-color: #4dd0e1;
+      background-color: #81D4FA;
       border: none;
       color: black;
       cursor: pointer;
@@ -992,7 +997,7 @@
   }
   
   .calendar-toggle:hover {
-      background-color: #00bcd4;
+      background-color: #64B5F6;
   }
   
   .calendar-section {
@@ -1063,11 +1068,12 @@
       align-items: center;
       gap: 8px;
       padding: 8px 16px;
-      background-color: #4dd0e1;
+      background-color: #81D4FA;
       color: black;
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      transition: all 0.3s ease;
   }
   
   /* Upcoming Appointments Section */
@@ -1105,7 +1111,8 @@
   
   .patients-table th,
   .appointments-table th {
-      background-color: #e0f7fa;
+      background-color: #E3F2FD;
+      color: black;
       font-weight: 600;
   }
   
@@ -1120,7 +1127,7 @@
   }
   
   .select-btn {
-      background-color: #4dd0e1;
+      background-color: #81D4FA;
       color: black;
   }
   
@@ -1143,7 +1150,7 @@
   
   .view-btn {
       padding: 6px 12px;
-      background-color: #4dd0e1;
+      background-color: #81D4FA;
       color: black;
       border: none;
       border-radius: 4px;
@@ -1152,7 +1159,7 @@
   }
   
   .view-btn:hover {
-      background-color: #00bcd4;
+      background-color: #64B5F6;
       transform: translateY(-2px);
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }

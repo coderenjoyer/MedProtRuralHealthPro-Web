@@ -3,9 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "../../Components/DoctorComp/docsidebar";
 import MainContentList from "../../Pages/DoctorPages/Maincontent";
 import MainContentPatient from "../../Pages/DoctorPages/Maincontpatient";
-import MClistappointment from "../../Components/DoctorComp/doclistapp";
-import MCappointment from "../../Components/DoctorComp/docappo";
-import MCcalendar from "../../Components/DoctorComp/doccalendar";
+import Appointments from "../../Components/PatRegisComp/PatAppo";
 import styled from "styled-components";
 
 const Wrapper = styled.div`
@@ -19,24 +17,37 @@ const Wrapper = styled.div`
 const ContentContainer = styled.div`
   display: flex;
   flex-grow: 1;
-  gap: 20px;
   padding: 20px;
   overflow: hidden;
+  height: 100%;
+  box-sizing: border-box;
+`;
 
-  & > div {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    max-height: 100%;
-  }
+const PatientDiagnosisContainer = styled.div`
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+`;
 
-  & > :first-child {
-    flex: 0.5;
-  }
+const ListContainer = styled.div`
+  width: ${props => props.$isPatientSelected ? '200px' : '400px'};
+  height: 100%;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width 0.3s ease;
+`;
 
-  & > :last-child {
-    flex: 1.5;
-  }
+const PatientContainer = styled.div`
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  min-width: 500px;
+  background-color: white;
+  border-radius: 15px;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.15);
 `;
 
 const animationSettings = {
@@ -46,67 +57,82 @@ const animationSettings = {
   transition: { duration: 0.5, ease: "easeInOut" },
 };
 
-const Parent = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [selectedButton, setSelectedButton] = useState("diagnosis");
+const EmptyState = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+`;
+
+const EmptyStateText = styled.h2`
+  color: #666;
+  font-size: 1.2rem;
+  text-align: center;
+`;
+
+const Doctor = () => {
+  const [isOpen, setIsOpen] = useState(true);
+  const [selectedButton, setSelectedButton] = useState("patientdiagnosis");
+  const [selectedPatient, setSelectedPatient] = useState(null);
+
+  const handlePatientSelect = (patient) => {
+    setSelectedPatient(patient);
+  };
 
   return (
     <Wrapper>
-      <Sidebar
-        isOpen={isSidebarOpen}
-        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        selectedButton={selectedButton}
-        setSelectedButton={setSelectedButton}
-      />
+      <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} selectedButton={selectedButton} setSelectedButton={setSelectedButton} />
       <ContentContainer>
         <AnimatePresence mode="wait">
-          {selectedButton === "diagnosis" && (
-            <>
-              <motion.div
-                key="list"
-                {...animationSettings}
-                style={{ flex: 0.5, display: "flex", flexDirection: "column" }}
-              >
-                <MainContentList />
-              </motion.div>
-
-              <motion.div
-                key="patient"
-                {...animationSettings}
-                style={{ flex: 1.5, display: "flex", flexDirection: "column" }}
-              >
-                <MainContentPatient />
-              </motion.div>
-            </>
+          {selectedButton === "patientdiagnosis" && (
+            <motion.div
+              key="patientdiagnosis"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              style={{ width: '100%', height: '100%' }}
+            >
+              <PatientDiagnosisContainer>
+                <ListContainer $isPatientSelected={!!selectedPatient}>
+                  <MainContentList onPatientSelect={handlePatientSelect} />
+                </ListContainer>
+                <PatientContainer>
+                  {selectedPatient ? (
+                    <MainContentPatient selectedPatient={selectedPatient} />
+                  ) : (
+                    <EmptyState>
+                      <EmptyStateText>Select a patient to view details</EmptyStateText>
+                    </EmptyState>
+                  )}
+                </PatientContainer>
+              </PatientDiagnosisContainer>
+            </motion.div>
           )}
 
           {selectedButton === "appointments" && (
-            <>
-              <motion.div
-                key="appointmentList"
-                {...animationSettings}
-                style={{ flex: 0.5, display: "flex", flexDirection: "column" }}
-              >
-                <MClistappointment />
-              </motion.div>
-
-              <motion.div
-                key="appointmentForm"
-                {...animationSettings}
-                style={{ flex: 1.5, display: "flex", flexDirection: "column" }}
-              >
-                <MCappointment />
-              </motion.div>
-            </>
+            <motion.div
+              key="appointments"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              style={{ width: '100%', height: '100%' }}
+            >
+              <Appointments />
+            </motion.div>
           )}
 
-          {selectedButton === "calendar" && (
+          {selectedButton === "logout" && (
             <motion.div
-              key="calendar"
-              {...animationSettings}
-              style={{ flex: 1, display: "flex", flexDirection: "column" }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              style={{ width: '100%', height: '100%' }}
             >
-              <MCcalendar />
+              <Logout />
             </motion.div>
           )}
         </AnimatePresence>
@@ -115,4 +141,4 @@ const Parent = () => {
   );
 };
 
-export default Parent;
+export default Doctor;

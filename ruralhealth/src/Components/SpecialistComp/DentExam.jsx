@@ -1,122 +1,178 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import styled from "styled-components"
 import { motion } from "framer-motion"
+import { ref, onValue, push, update, get } from 'firebase/database';
+import { database } from '../../Firebase/firebase';
 
-const ExaminationContainer = styled(motion.div)`
+const Container = styled(motion.div)`
   flex: 1;
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  overflow: hidden;
+`
+
+const PatientListSection = styled.div`
+  flex: 0 0 40%;
   background-color: ${({ theme }) => theme.colors.white};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   box-shadow: ${({ theme }) => theme.shadows.md};
-  overflow: hidden;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  overflow: hidden;
+  height: calc(100vh - 2rem);
 `
 
-const ExaminationHeader = styled.div`
-  background: linear-gradient(90deg, ${({ theme }) => theme.colors.secondaryDark} 0%, ${({ theme }) => theme.colors.secondary} 100%);
+const ExaminationSection = styled.div`
+  flex: 0 0 60%;
+  background-color: ${({ theme }) => theme.colors.white};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  box-shadow: ${({ theme }) => theme.shadows.md};
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: calc(100vh - 2rem);
+`
+
+const Header = styled.div`
+  background: linear-gradient(90deg, #2196f3 0%, #1976d2 100%);
   color: white;
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 `
 
-const ExaminationTitle = styled.h2`
+const Title = styled.h2`
   font-size: 1.5rem;
   font-weight: 600;
+  margin: 0;
 `
 
-const PatientNumber = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`
-
-const PatientNumberLabel = styled.span`
-  font-size: 0.875rem;
-`
-
-const PatientNumberValue = styled.span`
-  font-size: 0.875rem;
-  font-weight: 600;
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 0.25rem 0.5rem;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-`
-
-const ExaminationForm = styled.form`
-  padding: 1rem 1.5rem;
+const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  padding: 1.5rem;
   overflow-y: auto;
-  flex: 1;
+  height: 100%;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #555;
+    }
+  }
 `
 
-const FormSection = styled.div`
+const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border: 1px solid ${({ theme }) => theme.colors.grayLight};
 `
 
-const SectionTitle = styled.h3`
-  font-size: 1.25rem;
+const Label = styled.label`
+  font-size: 1rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.secondaryDark};
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.grayLight};
-`
-
-const FormRow = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-`
-
-const FormLabel = styled.label`
-  font-size: 0.875rem;
-  font-weight: 500;
   color: ${({ theme }) => theme.colors.grayDark};
-  width: 140px;
-  flex-shrink: 0;
 `
 
-const FormInput = styled.input`
-  flex: 1;
+const Input = styled.input`
   padding: 0.75rem;
   border: 1px solid ${({ theme }) => theme.colors.grayLight};
   border-radius: ${({ theme }) => theme.borderRadius.md};
-  font-size: 0.875rem;
+  font-size: 1rem;
+  color: ${({ theme }) => theme.colors.grayDark};
+  background: white;
   transition: all 0.2s ease;
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryLight};
+    border-color: #2196f3;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  }
+
+  &:disabled {
+    background: #f1f1f1;
+    cursor: not-allowed;
+  }
+`
+
+const TextArea = styled.textarea`
+  padding: 0.75rem;
+  border: 1px solid ${({ theme }) => theme.colors.grayLight};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: 1rem;
+  color: ${({ theme }) => theme.colors.grayDark};
+  min-height: 100px;
+  resize: vertical;
+  background: white;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #2196f3;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  }
+`
+
+const Select = styled.select`
+  padding: 0.75rem;
+  border: 1px solid ${({ theme }) => theme.colors.grayLight};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: 1rem;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #2196f3;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
   }
 `
 
 const ButtonContainer = styled.div`
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: white;
   border-top: 1px solid ${({ theme }) => theme.colors.grayLight};
+  position: sticky;
+  bottom: 0;
 `
 
 const Button = styled(motion.button)`
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius.md};
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 1rem;
+  min-width: 120px;
 `
 
 const ClearButton = styled(Button)`
@@ -125,32 +181,234 @@ const ClearButton = styled(Button)`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.gray};
-    color: white;
   }
 `
 
 const SubmitButton = styled(Button)`
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: #2196f3;
   color: white;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryDark};
+    background-color: #1976d2;
   }
 `
 
-const DentalExamination = () => {
+const PatientListContainer = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`
+
+const PatientListHeader = styled.div`
+  background: linear-gradient(90deg, #2196f3 0%, #1976d2 100%);
+  color: white;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+`
+
+const PatientListTitle = styled.h2`
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+`
+
+const PatientTableContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #555;
+    }
+  }
+`
+
+const PatientTable = styled.table`
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+`
+
+const TableHeader = styled.th`
+  background-color: #f8f9fa;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+  font-size: 1rem;
+`
+
+const TableCell = styled.td`
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  color: #333;
+  font-size: 1rem;
+`
+
+const TableRow = styled.tr`
+  &:hover {
+    background-color: #f8f9fa;
+  }
+`
+
+const SelectButton = styled(motion.button)`
+  padding: 0.5rem 1rem;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #1976d2;
+  }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+`
+
+const SearchInput = styled.input`
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 250px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  &:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+`
+
+const FeedbackMessage = styled(motion.div)`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  color: white;
+  font-weight: 500;
+  z-index: 1000;
+  background-color: ${({ type }) => type === 'success' ? '#4CAF50' : '#f44336'};
+  box-shadow: ${({ theme }) => theme.shadows.md};
+`;
+
+const DentalExamination = ({ selectedPatient: propSelectedPatient }) => {
+  const [patients, setPatients] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState(propSelectedPatient);
+  const [feedback, setFeedback] = useState({ show: false, message: '', type: 'success' });
   const [formData, setFormData] = useState({
     lastName: "",
     firstName: "",
     address: "",
     phoneNumber: "",
     previousIssues: "",
-    allergies: "",
-    currentMedications: "",
-    teethCondition: "",
-    gums: "",
+    presentIssues: "",
+    medications: "",
+    teethCondition: "Good",
+    gums: "Healthy",
     treatment: "",
-  })
+  });
+
+  // Show feedback message
+  const showFeedback = (message, type = 'success') => {
+    setFeedback({ show: true, message, type });
+    setTimeout(() => {
+      setFeedback({ show: false, message: '', type });
+    }, 3000);
+  };
+
+  // Load all patients
+  useEffect(() => {
+    const patientsRef = ref(database, 'rhp/patients');
+    const unsubscribe = onValue(patientsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const patientsList = Object.entries(data).map(([id, patient]) => ({
+          id,
+          ...patient
+        }));
+        setPatients(patientsList);
+      } else {
+        setPatients([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Load patient data when selected
+  useEffect(() => {
+    if (selectedPatient) {
+      setFormData(prev => ({
+        ...prev,
+        lastName: selectedPatient.personalInfo?.lastName || "",
+        firstName: selectedPatient.personalInfo?.firstName || "",
+        address: selectedPatient.personalInfo?.address || "",
+        phoneNumber: selectedPatient.contactInfo?.phoneNumber || "",
+      }));
+
+      // Load dental history
+      const dentalHistoryRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalHistory`);
+      onValue(dentalHistoryRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          setFormData(prev => ({
+            ...prev,
+            previousIssues: data.previousIssues || "",
+            presentIssues: data.presentIssues || "",
+            medications: data.medications || "",
+          }));
+        }
+      });
+    }
+  }, [selectedPatient]);
+
+  const handlePatientSelect = (patient) => {
+    setSelectedPatient(patient);
+    showFeedback(`Selected patient: ${patient.personalInfo.firstName} ${patient.personalInfo.lastName}`);
+  };
+
+  const filteredPatients = patients.filter(patient => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      patient.personalInfo?.firstName?.toLowerCase().includes(searchLower) ||
+      patient.personalInfo?.lastName?.toLowerCase().includes(searchLower) ||
+      patient.registrationNumber?.toLowerCase().includes(searchLower)
+    );
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -159,133 +417,240 @@ const DentalExamination = () => {
 
   const handleClear = () => {
     setFormData({
-      lastName: "",
-      firstName: "",
-      address: "",
-      phoneNumber: "",
+      lastName: selectedPatient?.personalInfo?.lastName || "",
+      firstName: selectedPatient?.personalInfo?.firstName || "",
+      address: selectedPatient?.personalInfo?.address || "",
+      phoneNumber: selectedPatient?.contactInfo?.phoneNumber || "",
       previousIssues: "",
-      allergies: "",
-      currentMedications: "",
-      teethCondition: "",
-      gums: "",
+      presentIssues: "",
+      medications: "",
+      teethCondition: "Good",
+      gums: "Healthy",
       treatment: "",
     })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle form submission
-    console.log(formData)
+    
+    if (!selectedPatient) {
+      showFeedback("Please select a patient first", 'error');
+      return;
+    }
+
+    try {
+      // Save dental history
+      const dentalHistoryRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalHistory`);
+      await update(dentalHistoryRef, {
+        previousIssues: formData.previousIssues,
+        presentIssues: formData.presentIssues,
+        medications: formData.medications,
+        lastUpdated: new Date().toISOString()
+      });
+
+      // Save examination results
+      const examinationRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
+      const newExaminationRef = push(examinationRef);
+      
+      await update(newExaminationRef, {
+        patientId: selectedPatient.id,
+        patientName: `${formData.firstName} ${formData.lastName}`,
+        examinationDate: new Date().toISOString(),
+        teethCondition: formData.teethCondition,
+        gums: formData.gums,
+        treatment: formData.treatment,
+        status: 'completed'
+      });
+
+      showFeedback("Dental examination saved successfully");
+      handleClear();
+    } catch (error) {
+      console.error("Error saving dental examination:", error);
+      showFeedback("Failed to save dental examination", 'error');
+    }
   }
 
   return (
-    <ExaminationContainer initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-      <ExaminationHeader>
-        <ExaminationTitle>Dental Examination</ExaminationTitle>
-        <PatientNumber>
-          <PatientNumberLabel>Patient Number</PatientNumberLabel>
-          <PatientNumberValue>_____</PatientNumberValue>
-        </PatientNumber>
-      </ExaminationHeader>
+    <>
+      {feedback.show && (
+        <FeedbackMessage
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          type={feedback.type}
+        >
+          {feedback.message}
+        </FeedbackMessage>
+      )}
+      <Container initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <PatientListSection>
+          <PatientListContainer>
+            <PatientListHeader>
+              <PatientListTitle>Registered Patients</PatientListTitle>
+              <SearchInput
+                type="text"
+                placeholder="Search patients..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </PatientListHeader>
+            <PatientTableContainer>
+              <PatientTable>
+                <thead>
+                  <tr>
+                    <TableHeader>Registration No.</TableHeader>
+                    <TableHeader>Name</TableHeader>
+                    <TableHeader>Contact</TableHeader>
+                    <TableHeader>Action</TableHeader>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPatients.map((patient) => (
+                    <TableRow key={patient.id}>
+                      <TableCell>{patient.registrationNumber || 'N/A'}</TableCell>
+                      <TableCell>
+                        {patient.personalInfo?.firstName} {patient.personalInfo?.lastName}
+                      </TableCell>
+                      <TableCell>{patient.contactInfo?.phoneNumber || 'N/A'}</TableCell>
+                      <TableCell>
+                        <SelectButton
+                          onClick={() => handlePatientSelect(patient)}
+                          disabled={selectedPatient?.id === patient.id}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          {selectedPatient?.id === patient.id ? 'Selected' : 'Select'}
+                        </SelectButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </tbody>
+              </PatientTable>
+            </PatientTableContainer>
+          </PatientListContainer>
+        </PatientListSection>
 
-      <ExaminationForm onSubmit={handleSubmit}>
-        <FormSection>
-          <FormRow>
-            <FormLabel>Name</FormLabel>
-            <FormInput
-              type="text"
-              name="lastName"
-              placeholder="Last Name"
-              value={formData.lastName}
-              onChange={handleChange}
-            />
-            <FormInput
-              type="text"
-              name="firstName"
-              placeholder="First Name"
-              value={formData.firstName}
-              onChange={handleChange}
-            />
-          </FormRow>
+        <ExaminationSection>
+          <Header>
+            <Title>Dental Examination</Title>
+          </Header>
 
-          <FormRow>
-            <FormLabel>Address</FormLabel>
-            <FormInput
-              type="text"
-              name="address"
-              placeholder="Address"
-              value={formData.address}
-              onChange={handleChange}
-            />
-          </FormRow>
+          <Form onSubmit={handleSubmit}>
+            <FormGroup>
+              <Label>Full Name</Label>
+              <Input 
+                type="text" 
+                name="lastName" 
+                placeholder="Last Name" 
+                value={formData.lastName} 
+                onChange={handleChange}
+                disabled={!!selectedPatient}
+              />
+              <Input 
+                type="text" 
+                name="firstName" 
+                placeholder="First Name" 
+                value={formData.firstName} 
+                onChange={handleChange}
+                disabled={!!selectedPatient}
+              />
+            </FormGroup>
 
-          <FormRow>
-            <FormLabel>Phone Number</FormLabel>
-            <FormInput
-              type="text"
-              name="phoneNumber"
-              placeholder="Phone Number"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-            />
-          </FormRow>
-        </FormSection>
+            <FormGroup>
+              <Label>Address</Label>
+              <Input 
+                type="text" 
+                name="address" 
+                placeholder="Enter your address" 
+                value={formData.address} 
+                onChange={handleChange}
+                disabled={!!selectedPatient}
+              />
+            </FormGroup>
 
-        <FormSection>
-          <SectionTitle>Dental History</SectionTitle>
+            <FormGroup>
+              <Label>Phone Number</Label>
+              <Input 
+                type="tel" 
+                name="phoneNumber" 
+                placeholder="Enter phone number" 
+                value={formData.phoneNumber} 
+                onChange={handleChange}
+                disabled={!!selectedPatient}
+              />
+            </FormGroup>
 
-          <FormRow>
-            <FormLabel>Previous Dental Issues</FormLabel>
-            <FormInput type="text" name="previousIssues" value={formData.previousIssues} onChange={handleChange} />
-          </FormRow>
+            <FormGroup>
+              <Label>Previous Dental Issues</Label>
+              <TextArea 
+                name="previousIssues" 
+                placeholder="Describe any previous dental issues" 
+                value={formData.previousIssues} 
+                onChange={handleChange} 
+              />
+            </FormGroup>
 
-          <FormRow>
-            <FormLabel>Allergies</FormLabel>
-            <FormInput type="text" name="allergies" value={formData.allergies} onChange={handleChange} />
-          </FormRow>
+            <FormGroup>
+              <Label>Present Dental Issues</Label>
+              <TextArea 
+                name="presentIssues" 
+                placeholder="Describe current dental issues" 
+                value={formData.presentIssues} 
+                onChange={handleChange} 
+              />
+            </FormGroup>
 
-          <FormRow>
-            <FormLabel>Current Medications</FormLabel>
-            <FormInput
-              type="text"
-              name="currentMedications"
-              value={formData.currentMedications}
-              onChange={handleChange}
-            />
-          </FormRow>
-        </FormSection>
+            <FormGroup>
+              <Label>Medications</Label>
+              <TextArea 
+                name="medications" 
+                placeholder="List any current medications" 
+                value={formData.medications} 
+                onChange={handleChange} 
+              />
+            </FormGroup>
 
-        <FormSection>
-          <SectionTitle>Examination Findings</SectionTitle>
+            <FormGroup>
+              <Label>Condition of Teeth</Label>
+              <Select name="teethCondition" value={formData.teethCondition} onChange={handleChange}>
+                <option value="Good">Good</option>
+                <option value="Fair">Fair</option>
+                <option value="Poor">Poor</option>
+              </Select>
+            </FormGroup>
 
-          <FormRow>
-            <FormLabel>Condition of Teeth</FormLabel>
-            <FormInput type="text" name="teethCondition" value={formData.teethCondition} onChange={handleChange} />
-          </FormRow>
+            <FormGroup>
+              <Label>Gums Condition</Label>
+              <Select name="gums" value={formData.gums} onChange={handleChange}>
+                <option value="Healthy">Healthy</option>
+                <option value="Inflamed">Inflamed</option>
+                <option value="Bleeding">Bleeding</option>
+              </Select>
+            </FormGroup>
 
-          <FormRow>
-            <FormLabel>Gums</FormLabel>
-            <FormInput type="text" name="gums" value={formData.gums} onChange={handleChange} />
-          </FormRow>
+            <FormGroup>
+              <Label>Recommended Treatment</Label>
+              <TextArea 
+                name="treatment" 
+                placeholder="Describe suggested treatment" 
+                value={formData.treatment} 
+                onChange={handleChange} 
+              />
+            </FormGroup>
 
-          <FormRow>
-            <FormLabel>Treatment</FormLabel>
-            <FormInput type="text" name="treatment" value={formData.treatment} onChange={handleChange} />
-          </FormRow>
-        </FormSection>
-
-        <ButtonContainer>
-          <ClearButton type="button" onClick={handleClear} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            Clear
-          </ClearButton>
-          <SubmitButton type="submit" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            Submit
-          </SubmitButton>
-        </ButtonContainer>
-      </ExaminationForm>
-    </ExaminationContainer>
+            <ButtonContainer>
+              <ClearButton type="button" onClick={handleClear} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                Clear
+              </ClearButton>
+              <SubmitButton type="submit" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                Submit
+              </SubmitButton>
+            </ButtonContainer>
+          </Form>
+        </ExaminationSection>
+      </Container>
+    </>
   )
 }
 
 export default DentalExamination
-

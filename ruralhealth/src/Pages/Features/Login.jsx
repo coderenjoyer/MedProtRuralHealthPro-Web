@@ -10,8 +10,11 @@ const Container = styled.div`
   align-items: center;
   height: 100vh;
   width: 100vw;
-  background-color: #f4f4f4;
-`;
+  background: url("/bgbgrh.png") no-repeat center center;
+  background-size: cover; 
+  background-attachment: fixed; 
+`;  
+
 
 const LoginBox = styled.div`
   width: 350px;

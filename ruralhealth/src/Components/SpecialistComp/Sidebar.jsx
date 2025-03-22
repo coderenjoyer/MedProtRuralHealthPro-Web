@@ -3,11 +3,10 @@ import styled from "styled-components"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom" 
 import { Stethoscope, Calendar, LogOut, User } from "lucide-react"
-import Appo from "../../Components/PatRegisComp/PatAppo"
 
 const SidebarContainer = styled.aside`
   width: 240px;
-  background: linear-gradient(180deg, ${({ theme }) => theme.colors.primary} 0%, ${({ theme }) => theme.colors.primaryDark} 100%);
+  background: linear-gradient(180deg, #4FC3F7 0%, #29b6f6 100%);
   color: white;
   display: flex;
   flex-direction: column;
@@ -63,13 +62,13 @@ const NavItem = styled(motion.button)`
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(79, 195, 247, 0.2);
   }
 
   ${({ active, theme }) =>
     active &&
     `
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(79, 195, 247, 0.3);
     font-weight: 600;
     
     &::before {
@@ -101,7 +100,7 @@ const LogoutButton = styled(motion.button)`
   align-items: center;
   width: 100%;
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(79, 195, 247, 0.2);
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius.md};
   color: white;
@@ -111,19 +110,19 @@ const LogoutButton = styled(motion.button)`
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(79, 195, 247, 0.3);
   }
 `
 
 const Sidebar = ({ setActiveView, activeView }) => {
-  const navigate = useNavigate() // Initialize useNavigate
+  const navigate = useNavigate()
 
   return (
     <SidebarContainer>
       <Logo>
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.5, type: "spring" }}>
           <LogoIcon>
-            <User size={40} />
+            <Stethoscope size={40} />
           </LogoIcon>
         </motion.div>
         <motion.div
@@ -131,7 +130,7 @@ const Sidebar = ({ setActiveView, activeView }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <LogoText>DENTIST</LogoText>
+          <LogoText>SPECIALIST</LogoText>
         </motion.div>
       </Logo>
 
@@ -142,14 +141,14 @@ const Sidebar = ({ setActiveView, activeView }) => {
           whileTap={{ scale: 0.95 }}
         >
           <IconWrapper>
-            <User size={20} />
+            <Stethoscope size={20} />
           </IconWrapper>
           Dental Examination
         </NavItem>
 
         <NavItem
-          active={window.location.pathname === "/appointments"} // Ensure active state is correct
-          onClick={() => navigate("/appointments")} // Navigate to /appointments
+          active={activeView === "appointments"}
+          onClick={() => setActiveView("appointments")}
           whileTap={{ scale: 0.95 }}
         >
           <IconWrapper>

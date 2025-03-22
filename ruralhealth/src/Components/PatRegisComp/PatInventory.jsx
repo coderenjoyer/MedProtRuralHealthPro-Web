@@ -1,98 +1,375 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
+import { ref, onValue, set, remove, update } from "firebase/database";
+import { database } from "../../Firebase/firebase";
+import { toast } from "react-toastify";
+import styled from "styled-components";
+
+const InventoryContainer = styled.div`
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+`;
+
+const MedicineManagement = styled.div`
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  max-width: 400px;
+`;
+
+const HeaderSection = styled.div`
+  margin-bottom: 20px;
+`;
+
+const SectionTitle = styled.h2`
+  font-size: 22px;
+  font-weight: 600;
+  color: #105c7c;
+  margin-bottom: 15px;
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #495057;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    background: #f8f9fa;
+    font-size: 14px;
+    outline: none;
+    color: #000000;
+  }
+
+  textarea {
+    resize: none;
+    height: 60px;
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+`;
+
+const Button = styled.button`
+  flex: 1;
+  background-color: #105c7c;
+  border: none;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #0d4a63;
+  }
+
+  &.remove-btn {
+    background-color: #dc3545;
+    &:hover {
+      background-color: #c82333;
+    }
+  }
+`;
+
+const MedicineList = styled.div`
+  flex: 2;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+`;
+
+const SearchSection = styled.div`
+  margin-bottom: 20px;
+`;
+
+const SearchBox = styled.div`
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.05);
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    color: #105c7c;
+    cursor: pointer;
+    padding: 5px 10px;
+  }
+`;
+
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 12px;
+    text-align: left;
+  }
+
+  th {
+    background: #105c7c;
+    color: white;
+  }
+
+  tr:nth-child(even) {
+    background: #f8f9fa;
+  }
+`;
 
 function ManageInventory() {
+    const [medicines, setMedicines] = useState([]);
+    const [formData, setFormData] = useState({
+        name: "",
+        brand: "",
+        description: "",
+        quantity: 0,
+        expiryDate: ""
+    });
+    const [editingId, setEditingId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    // Function to generate a 3-digit ID
+    const generateThreeDigitId = () => {
+        const existingIds = medicines.map(med => parseInt(med.id));
+        let newId;
+        do {
+            newId = Math.floor(Math.random() * 900) + 100; // Generates number between 100 and 999
+        } while (existingIds.includes(newId));
+        return newId.toString();
+    };
+
+    useEffect(() => {
+        const medicinesRef = ref(database, 'rhp/medicines');
+        const unsubscribe = onValue(medicinesRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const medicinesList = Object.entries(data).map(([id, medicine]) => ({
+                    id,
+                    ...medicine
+                }));
+                setMedicines(medicinesList);
+            } else {
+                setMedicines([]);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (editingId) {
+                // Update existing medicine
+                const medicineRef = ref(database, `rhp/medicines/${editingId}`);
+                await update(medicineRef, formData);
+                toast.success("Medicine updated successfully!");
+            } else {
+                // Add new medicine with 3-digit ID
+                const newId = generateThreeDigitId();
+                const newMedicineRef = ref(database, `rhp/medicines/${newId}`);
+                await set(newMedicineRef, formData);
+                toast.success("Medicine added successfully!");
+            }
+            setFormData({ name: "", brand: "", description: "", quantity: 0, expiryDate: "" });
+            setEditingId(null);
+        } catch (error) {
+            toast.error("Error saving medicine: " + error.message);
+        }
+    };
+
+    const handleEdit = (medicine) => {
+        setFormData({
+            name: medicine.name,
+            brand: medicine.brand,
+            description: medicine.description,
+            quantity: medicine.quantity,
+            expiryDate: medicine.expiryDate || ""
+        });
+        setEditingId(medicine.id);
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm("Are you sure you want to delete this medicine?")) {
+            try {
+                const medicineRef = ref(database, `rhp/medicines/${id}`);
+                await remove(medicineRef);
+                toast.success("Medicine deleted successfully!");
+            } catch (error) {
+                toast.error("Error deleting medicine: " + error.message);
+            }
+        }
+    };
+
+    const filteredMedicines = medicines.filter(medicine =>
+        medicine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        medicine.brand.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
-        <div className="inventory-container">
-            {/* Left side - existing medicine management */}
-            <div className="medicine-management">
-                <div className="header-section">
-                    <h2 className="section-title">Medicine Management</h2>
-                    <div className="medicine-id">
+        <InventoryContainer>
+            <MedicineManagement>
+                <HeaderSection>
+                    <SectionTitle>Medicine Management</SectionTitle>
+                    <FormGroup>
                         <label>Medicine ID</label>
-                        <input type="text" className="form-control" disabled />
-                    </div>
-                </div>
+                        <input type="text" value={editingId || generateThreeDigitId()} disabled />
+                    </FormGroup>
+                </HeaderSection>
 
-                <div className="medicine-form">
-                    <div className="form-group">
+                <form onSubmit={handleSubmit}>
+                    <FormGroup>
                         <label>Medicine Name</label>
-                        <input type="text" className="form-control" />
-                    </div>
+                        <input 
+                            type="text" 
+                            name="name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            required
+                        />
+                    </FormGroup>
 
-                    <div className="form-group">
+                    <FormGroup>
                         <label>Medicine Brand</label>
-                        <input type="text" className="form-control" />
-                    </div>
+                        <input 
+                            type="text" 
+                            name="brand"
+                            value={formData.brand}
+                            onChange={handleInputChange}
+                            required
+                        />
+                    </FormGroup>
 
-                    <div className="form-group">
+                    <FormGroup>
                         <label>Medicine Description</label>
-                        <textarea className="form-control" rows="3"></textarea>
-                    </div>
+                        <textarea 
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            required
+                        ></textarea>
+                    </FormGroup>
 
-                    <div className="form-group">
+                    <FormGroup>
                         <label>Quantity</label>
-                        <input type="text" className="form-control" />
-                    </div>
+                        <input 
+                            type="number" 
+                            name="quantity"
+                            value={formData.quantity}
+                            onChange={handleInputChange}
+                            required
+                            min="0"
+                        />
+                    </FormGroup>
 
-                    <div className="form-group">
+                    <FormGroup>
                         <label>Medicine Expiry</label>
-                        <input type="date" className="form-control" />
-                    </div>
+                        <input 
+                            type="date" 
+                            name="expiryDate"
+                            value={formData.expiryDate}
+                            onChange={handleInputChange}
+                            required
+                        />
+                    </FormGroup>
 
-                    <div className="button-group">
-                        <button className="btn add-btn">Add Medicine</button>
-                        <button className="btn update-btn">Update Stock</button>
-                        <button className="btn remove-btn">Remove Stock</button>
-                    </div>
-                </div>
-            </div>
+                    <ButtonGroup>
+                        <Button type="submit">{editingId ? 'Update' : 'Add'}</Button>
+                        {editingId && (
+                            <Button type="button" onClick={() => {
+                                setFormData({ name: "", brand: "", description: "", quantity: 0, expiryDate: "" });
+                                setEditingId(null);
+                            }}>Cancel</Button>
+                        )}
+                    </ButtonGroup>
+                </form>
+            </MedicineManagement>
 
-            {/* Right side - medicine search and table */}
-            <div className="medicine-list">
-                <div className="search-section">
-                    <div className="search-box">
+            <MedicineList>
+                <SearchSection>
+                    <SearchBox>
                         <input 
                             type="text" 
                             placeholder="Search medicine..." 
-                            className="search-input"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <button className="search-button">
+                        <button>
                             <Search size={20} />
                             Search
                         </button>
-                    </div>
-                </div>
+                    </SearchBox>
+                </SearchSection>
 
-                <div className="table-section">
-                    <table className="medicine-table">
-                        <thead>
-                            <tr>
-                                <th>Medicine ID</th>
-                                <th>Name</th>
-                                <th>Brand</th>
-                                <th>Quantity</th>
-                                <th>Expiry Date</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>MED001</td>
-                                <td>Paracetamol</td>
-                                <td>Biogesic</td>
-                                <td>100</td>
-                                <td>2025-12-31</td>
+                <Table>
+                    <thead>
+                        <tr>
+                            <th>Medicine ID</th>
+                            <th>Name</th>
+                            <th>Brand</th>
+                            <th>Quantity</th>
+                            <th>Expiry Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredMedicines.map((medicine) => (
+                            <tr key={medicine.id}>
+                                <td>{medicine.id}</td>
+                                <td>{medicine.name}</td>
+                                <td>{medicine.brand}</td>
+                                <td>{medicine.quantity}</td>
+                                <td>{medicine.expiryDate}</td>
                                 <td>
-                                    <button className="action-btn">Select</button>
+                                    <Button onClick={() => handleEdit(medicine)} style={{ marginRight: '5px' }}>Edit</Button>
+                                    <Button onClick={() => handleDelete(medicine.id)} className="remove-btn">Delete</Button>
                                 </td>
                             </tr>
-                            {/* Add more sample rows as needed */}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                        ))}
+                    </tbody>
+                </Table>
+            </MedicineList>
+        </InventoryContainer>
     );
 }
 

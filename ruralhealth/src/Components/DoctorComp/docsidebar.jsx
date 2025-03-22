@@ -189,8 +189,8 @@ const Sidebar = ({ isOpen, toggleSidebar, selectedButton, setSelectedButton }) =
         <ButtonGroup>
           <Button
             $isOpen={isOpen}
-            className={selectedButton === "diagnosis" ? "selected" : ""}
-            onClick={() => setSelectedButton("diagnosis")}
+            className={selectedButton === "patientdiagnosis" ? "selected" : ""}
+            onClick={() => setSelectedButton("patientdiagnosis")}
           >
             <Plus />
             {isOpen && <span>Patient Diagnosis</span>}
@@ -203,15 +203,6 @@ const Sidebar = ({ isOpen, toggleSidebar, selectedButton, setSelectedButton }) =
           >
             <User />
             {isOpen && <span>Appointments</span>}
-          </Button>
-
-          <Button
-            $isOpen={isOpen}
-            className={selectedButton === "calendar" ? "selected" : ""}
-            onClick={() => setSelectedButton("calendar")}
-          >
-            <Calendar />
-            {isOpen && <span>Calendar</span>}
           </Button>
         </ButtonGroup>
 
