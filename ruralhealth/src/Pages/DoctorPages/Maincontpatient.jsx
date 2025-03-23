@@ -6,11 +6,6 @@ import { ref, onValue, update } from "firebase/database";
 import { database } from "../../Firebase/firebase";
 import { toast } from "react-toastify";
 
-const medicines = [
-  "Aspirin", "Ibuprofen", "Paracetamol", "Amoxicillin", "Metformin", 
-  "Lisinopril", "Atorvastatin", "Omeprazole", "Losartan", "Hydrochlorothiazide"
-].map(med => ({ label: med, value: med }));
-
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -148,6 +143,20 @@ const MedicineList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const MedicineItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
 const ButtonRow = styled.div`
@@ -242,10 +251,9 @@ const MainContentPatient = ({ selectedPatient }) => {
     comments: ""
   });
 
-  // Filter out medicines that are selected as allergies
   const getFilteredMedicines = () => {
     const allergyValues = allergies.map(med => med.value);
-    return medicines.filter(med => !allergyValues.includes(med.value));
+    return availableMedicines.filter(med => !allergyValues.includes(med.name));
   };
 
   // Update planned medicines when allergies change
@@ -348,6 +356,15 @@ const MainContentPatient = ({ selectedPatient }) => {
         }
       };
 
+      // Update the available medicines stock
+      const updatesForMedicines = {};
+      plannedMeds.forEach(med => {
+        const currentStock = availableMedicines.find(m => m.value === med.value)?.quantity || 0;
+        const newStock = currentStock - (quantities[med.value] || 0);
+        updatesForMedicines[`rhp/medicines/${med.value}/quantity`] = newStock;
+      });
+
+      await update(database, updatesForMedicines);
       await update(patientRef, updates);
       toast.success("Patient information updated successfully");
     } catch (error) {
@@ -398,7 +415,7 @@ const MainContentPatient = ({ selectedPatient }) => {
             <Section>
               <FooterLabel>ALLERGIES / MEDICINES TO AVOID:</FooterLabel>
               <Select 
-                options={medicines} 
+                options={availableMedicines.map(med => ({ label: med.name, value: med.name }))} 
                 isMulti 
                 value={allergies} 
                 onChange={setAllergies} 
@@ -409,7 +426,7 @@ const MainContentPatient = ({ selectedPatient }) => {
             <Section>
               <FooterLabel>PLANNED MEDICINES:</FooterLabel>
               <Select 
-                options={getFilteredMedicines()} 
+                options={getFilteredMedicines().map(med => ({ label: med.name, value: med.name }))} 
                 isMulti 
                 value={plannedMeds} 
                 onChange={setPlannedMeds} 
@@ -417,15 +434,21 @@ const MainContentPatient = ({ selectedPatient }) => {
               />
               <MedicineList>
                 {plannedMeds.map(med => (
-                  <div key={med.value}>
-                    {med.label.toUpperCase()} 
+                  <MedicineItem key={med.value}>
+                    <span>{med.label.toUpperCase()}</span>
                     <QuantityInput 
                       type="number" 
                       placeholder="Qty" 
                       value={quantities[med.value] || ""}
                       onChange={(e) => handleQuantityChange(med.value, e.target.value)} 
                     />
-                  </div>
+                    <InputField 
+                      type="text" 
+                      placeholder="Enter prescribed quantity..." 
+                      value={quantities[med.value] || ""}
+                      onChange={(e) => handleQuantityChange(med.value, e.target.value)} 
+                    />
+                  </MedicineItem>
                 ))}
               </MedicineList>
             </Section>
@@ -448,7 +471,7 @@ const MainContentPatient = ({ selectedPatient }) => {
                     <TableCell>{medicine.name}</TableCell>
                     <TableCell>{medicine.brand || "N/A"}</TableCell>
                     <TableCell>{medicine.quantity || "N/A"}</TableCell>
-                    <TableCell>{medicine.expiration || "N/A"}</TableCell>
+                    <TableCell>{medicine.expiryDate}</TableCell>
                   </TableRow>
                 ))}
               </tbody>

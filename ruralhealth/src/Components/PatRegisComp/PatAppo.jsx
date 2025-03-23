@@ -179,15 +179,21 @@ function Appointments({ selectedPatient, onPatientSelect }) {
 
     // Handle patient selection
     const handlePatientSelect = (patient) => {
-        console.log('Patient selected:', patient);
-        setLocalSelectedPatient(patient);
-        if (onPatientSelect) {
-            onPatientSelect(patient);
-        }
-        // Scroll to appointment form
-        const appointmentForm = document.getElementById('appointment-form');
-        if (appointmentForm) {
-            appointmentForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (currentPatient?.id === patient.id) {
+            setLocalSelectedPatient(null);
+            if (onPatientSelect) {
+                onPatientSelect(null);
+            }
+        } else {
+            setLocalSelectedPatient(patient);
+            if (onPatientSelect) {
+                onPatientSelect(patient);
+            }
+            // Scroll to appointment form
+            const appointmentForm = document.getElementById('appointment-form');
+            if (appointmentForm) {
+                appointmentForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     };
 
@@ -493,7 +499,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                     <tr key={patient.id}>
                                         <td style={{ color: '#000000' }}>{patient.registrationInfo?.registrationNumber || 'N/A'}</td>
                                         <td style={{ color: '#000000' }}>{`${patient.personalInfo?.firstName || ''} ${patient.personalInfo?.lastName || ''}`}</td>
-                                        <td style={{ color: '#000000' }}>{patient.contactInfo?.phoneNumber || 'N/A'}</td>
+                                        <td style={{ color: '#000000' }}>{patient.contactInfo?.contactNumber}</td>
                                         <td>
                                             <SelectButton 
                                                 $isSelected={currentPatient?.id === patient.id}
