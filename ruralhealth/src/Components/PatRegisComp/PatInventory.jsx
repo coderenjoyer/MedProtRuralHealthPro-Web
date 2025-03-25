@@ -199,6 +199,17 @@ function ManageInventory() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Check for duplicate medicine name
+            const isDuplicate = medicines.some(medicine => 
+                medicine.name.toLowerCase() === formData.name.toLowerCase() && 
+                medicine.id !== editingId // Exclude current medicine when editing
+            );
+
+            if (isDuplicate) {
+                toast.error("A medicine with this name already exists!");
+                return;
+            }
+
             if (editingId) {
                 // Update existing medicine
                 const medicineRef = ref(database, `rhp/medicines/${editingId}`);

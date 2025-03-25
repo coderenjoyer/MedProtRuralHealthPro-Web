@@ -72,6 +72,8 @@ const CommentsInput = styled.textarea`
   padding: 10px;
   resize: none;
   font-size: 1rem;
+  background-color: #ffffff;
+  color: #333333;
 `;
 
 const DetailsSection = styled.div`
@@ -105,6 +107,13 @@ const InputField = styled.input`
   font-size: 1rem;
   border: 1px solid #ddd;
   border-radius: 5px;
+  background-color: #ffffff;
+  color: #333333;
+
+  &:disabled {
+    background-color: #f5f5f5;
+    color: #666666;
+  }
 `;
 
 const FooterRow = styled.div`
@@ -136,6 +145,8 @@ const QuantityInput = styled.input`
   font-size: 1rem;
   border: 1px solid #ddd;
   border-radius: 5px;
+  background-color: #ffffff;
+  color: #333333;
 `;
 
 const MedicineList = styled.div`
@@ -344,32 +355,38 @@ const MainContentPatient = ({ selectedPatient }) => {
     }
 
     try {
-      const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
-      const updates = {
-        medicalInfo: {
-          allergies: allergies.map(med => med.value),
-          existingConditions: formData.presentIllnesses.split(",").map(condition => condition.trim()),
-          medications: plannedMeds.map(med => `${med.label} (${quantities[med.value] || 0})`)
-        },
-        registrationInfo: {
-          lastVisit: new Date().toISOString()
-        }
-      };
+      // Create updates object for all changes
+      const updates = {};
 
-      // Update the available medicines stock
-      const updatesForMedicines = {};
+      // Update patient information
+      updates[`rhp/patients/${selectedPatient.id}/medicalInfo`] = {
+        allergies: allergies.map(med => med.value),
+        existingConditions: formData.presentIllnesses.split(",").map(condition => condition.trim()),
+        medications: plannedMeds.map(med => `${med.label} (${quantities[med.value] || 0})`)
+      };
+      
+      updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
+
+      // Update medicine quantities
       plannedMeds.forEach(med => {
-        const currentStock = availableMedicines.find(m => m.value === med.value)?.quantity || 0;
-        const newStock = currentStock - (quantities[med.value] || 0);
-        updatesForMedicines[`rhp/medicines/${med.value}/quantity`] = newStock;
+        const medicine = availableMedicines.find(m => m.name === med.label);
+        if (medicine) {
+          const prescribedQuantity = parseInt(quantities[med.value]) || 0;
+          const newStock = medicine.quantity - prescribedQuantity;
+          if (newStock < 0) {
+            throw new Error(`Insufficient stock for ${med.label}`);
+          }
+          updates[`rhp/medicines/${medicine.id}/quantity`] = newStock;
+        }
       });
 
-      await update(database, updatesForMedicines);
-      await update(patientRef, updates);
+      // Apply all updates in one transaction
+      await update(ref(database), updates);
       toast.success("Patient information updated successfully");
+      handleClear();
     } catch (error) {
       console.error("Error updating patient:", error);
-      toast.error("Failed to update patient information");
+      toast.error(error.message || "Failed to update patient information");
     }
   };
 
@@ -419,7 +436,25 @@ const MainContentPatient = ({ selectedPatient }) => {
                 isMulti 
                 value={allergies} 
                 onChange={setAllergies} 
-                placeholder="Select medicines..." 
+                placeholder="Select medicines..."
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    backgroundColor: '#ffffff',
+                  }),
+                  input: (base) => ({
+                    ...base,
+                    color: '#333333',
+                  }),
+                  option: (base) => ({
+                    ...base,
+                    backgroundColor: '#ffffff',
+                    color: '#333333',
+                    '&:hover': {
+                      backgroundColor: '#f0f0f0',
+                    },
+                  }),
+                }}
               />
             </Section>
   
@@ -430,7 +465,25 @@ const MainContentPatient = ({ selectedPatient }) => {
                 isMulti 
                 value={plannedMeds} 
                 onChange={setPlannedMeds} 
-                placeholder="Select medicines..." 
+                placeholder="Select medicines..."
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    backgroundColor: '#ffffff',
+                  }),
+                  input: (base) => ({
+                    ...base,
+                    color: '#333333',
+                  }),
+                  option: (base) => ({
+                    ...base,
+                    backgroundColor: '#ffffff',
+                    color: '#333333',
+                    '&:hover': {
+                      backgroundColor: '#f0f0f0',
+                    },
+                  }),
+                }}
               />
               <MedicineList>
                 {plannedMeds.map(med => (
