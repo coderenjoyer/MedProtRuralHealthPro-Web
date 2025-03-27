@@ -3,6 +3,7 @@ import styled from "styled-components"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom" 
 import { Stethoscope, Calendar, LogOut, User } from "lucide-react"
+import { useState } from "react"
 
 const SidebarContainer = styled.aside`
   width: 240px;
@@ -145,6 +146,35 @@ const LogoutButton = styled(motion.button)`
 
 const Sidebar = ({ setActiveView, activeView }) => {
   const navigate = useNavigate()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const handleViewChange = (view) => {
+    try {
+      if (!view || typeof view !== 'string') {
+        throw new Error('Invalid view parameter')
+      }
+      setActiveView(view)
+    } catch (error) {
+      console.error('Error changing view:', error)
+      // Fallback to examination view if there's an error
+      setActiveView('examination')
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true)
+      // Add any cleanup logic here (e.g., clearing session data)
+      await new Promise(resolve => setTimeout(resolve, 500)) // Simulate cleanup
+      navigate('/')
+    } catch (error) {
+      console.error('Error during logout:', error)
+      // Still navigate to home even if there's an error
+      navigate('/')
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
 
   return (
     <SidebarContainer>
@@ -166,8 +196,9 @@ const Sidebar = ({ setActiveView, activeView }) => {
       <NavItems>
         <NavItem
           active={activeView === "examination"}
-          onClick={() => setActiveView("examination")}
+          onClick={() => handleViewChange("examination")}
           whileTap={{ scale: 0.95 }}
+          disabled={isLoggingOut}
         >
           <IconWrapper>
             <Stethoscope size={20} />
@@ -177,8 +208,9 @@ const Sidebar = ({ setActiveView, activeView }) => {
 
         <NavItem
           active={activeView === "appointments"}
-          onClick={() => setActiveView("appointments")}
+          onClick={() => handleViewChange("appointments")}
           whileTap={{ scale: 0.95 }}
+          disabled={isLoggingOut}
         >
           <IconWrapper>
             <Calendar size={20} />
@@ -188,11 +220,15 @@ const Sidebar = ({ setActiveView, activeView }) => {
       </NavItems>
 
       <Footer>
-        <LogoutButton whileTap={{ scale: 0.95 }} onClick={() => navigate("/")}>
+        <LogoutButton 
+          whileTap={{ scale: 0.95 }} 
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
           <IconWrapper>
             <LogOut size={18} />
           </IconWrapper>
-          Log Out
+          {isLoggingOut ? 'Logging Out...' : 'Log Out'}
         </LogoutButton>
       </Footer>
     </SidebarContainer>

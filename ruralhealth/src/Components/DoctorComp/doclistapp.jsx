@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { format } from "date-fns";
 
@@ -116,51 +116,164 @@ const NoResults = styled.div`
   margin-top: 10px;
 `;
 
+const ErrorMessage = styled.div`
+  padding: 1rem;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 10px;
+  margin: 10px 0;
+  text-align: center;
+`;
+
+const LoadingMessage = styled.div`
+  padding: 1rem;
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+  border-radius: 10px;
+  margin: 10px 0;
+  text-align: center;
+`;
+
 const MClistappointment = () => {
   const [searchPatient, setSearchPatient] = useState("");
   const [searchAppointment, setSearchAppointment] = useState("");
   const [hoveredAppointment, setHoveredAppointment] = useState(null);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [registeredPatients, setRegisteredPatients] = useState([]);
+  const [appointments, setAppointments] = useState([]);
 
-  const registeredPatients = ["Howard", "Coward", "John Doe", "Jane Smith", "Emily Clark"];
+  // Simulated data loading with error handling
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Simulated data
+        const patients = ["Howard", "Coward", "John Doe", "Jane Smith", "Emily Clark"];
+        const appointmentsData = [
+          { name: "Howard", date: "2024-02-15", time: "10:00 AM", description: "General check-up." },
+          { name: "Coward", date: "2024-02-18", time: "1:00 PM", description: "Follow-up for blood tests." },
+          { name: "John Doe", date: "2024-03-05", time: "9:30 AM", description: "Consultation for back pain." },
+          { name: "Jane Smith", date: "2024-03-12", time: "11:15 AM", description: "Routine vaccination." },
+          { name: "Emily Clark", date: "2024-04-01", time: "2:00 PM", description: "Pediatric appointment." },
+        ];
 
-  const appointments = [
-    { name: "Howard", date: "2024-02-15", time: "10:00 AM", description: "General check-up." },
-    { name: "Coward", date: "2024-02-18", time: "1:00 PM", description: "Follow-up for blood tests." },
-    { name: "John Doe", date: "2024-03-05", time: "9:30 AM", description: "Consultation for back pain." },
-    { name: "Jane Smith", date: "2024-03-12", time: "11:15 AM", description: "Routine vaccination." },
-    { name: "Emily Clark", date: "2024-04-01", time: "2:00 PM", description: "Pediatric appointment." },
-  ];
-  
-  const filteredPatients = registeredPatients.filter((patient) =>
-    patient.toLowerCase().includes(searchPatient.toLowerCase())
-  );
+        // Validate data before setting state
+        if (!Array.isArray(patients) || !Array.isArray(appointmentsData)) {
+          throw new Error('Invalid data format received');
+        }
 
-  const filteredAppointments = appointments.filter((appointment) =>
-    appointment.name.toLowerCase().includes(searchAppointment.toLowerCase())
-  );
+        setRegisteredPatients(patients);
+        setAppointments(appointmentsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setError('Failed to load data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleMouseEnter = (appointment, event) => {
-    const rect = event.target.getBoundingClientRect();
-    setHoveredAppointment({
-      ...appointment,
-      $top: rect.top + window.scrollY,
-      $left: rect.right + 10,
-    });
+    loadData();
+  }, []);
+
+  // Sanitize and validate search input
+  const handleSearchPatient = (e) => {
+    try {
+      const value = e.target.value;
+      // Only allow alphanumeric characters, spaces, and basic punctuation
+      const sanitizedValue = value.replace(/[^A-Za-z0-9\s\-'\.]/g, '');
+      setSearchPatient(sanitizedValue);
+    } catch (error) {
+      console.error('Error handling search input:', error);
+      setError('Error processing search input');
+    }
   };
 
-  const handleMouseLeave = () => setHoveredAppointment(null);
+  const handleSearchAppointment = (e) => {
+    try {
+      const value = e.target.value;
+      // Only allow alphanumeric characters, spaces, and basic punctuation
+      const sanitizedValue = value.replace(/[^A-Za-z0-9\s\-'\.]/g, '');
+      setSearchAppointment(sanitizedValue);
+    } catch (error) {
+      console.error('Error handling search input:', error);
+      setError('Error processing search input');
+    }
+  };
+
+  // Filter patients with error handling
+  const filteredPatients = React.useMemo(() => {
+    try {
+      return registeredPatients.filter((patient) =>
+        patient.toLowerCase().includes(searchPatient.toLowerCase())
+      );
+    } catch (error) {
+      console.error('Error filtering patients:', error);
+      return [];
+    }
+  }, [registeredPatients, searchPatient]);
+
+  // Filter appointments with error handling
+  const filteredAppointments = React.useMemo(() => {
+    try {
+      return appointments.filter((appointment) =>
+        appointment.name.toLowerCase().includes(searchAppointment.toLowerCase())
+      );
+    } catch (error) {
+      console.error('Error filtering appointments:', error);
+      return [];
+    }
+  }, [appointments, searchAppointment]);
+
+  const handleMouseEnter = (appointment, event) => {
+    try {
+      if (!appointment || !event.target) {
+        throw new Error('Invalid appointment or event data');
+      }
+
+      const rect = event.target.getBoundingClientRect();
+      setHoveredAppointment({
+        ...appointment,
+        $top: rect.top + window.scrollY,
+        $left: rect.right + 10,
+      });
+    } catch (error) {
+      console.error('Error handling mouse enter:', error);
+      setError('Error displaying appointment details');
+    }
+  };
+
+  const handleMouseLeave = () => {
+    try {
+      setHoveredAppointment(null);
+    } catch (error) {
+      console.error('Error handling mouse leave:', error);
+      setError('Error hiding appointment details');
+    }
+  };
 
   return (
     <Container>
       <Header>APPOINTMENTS</Header>
+
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {isLoading && <LoadingMessage>Loading data...</LoadingMessage>}
 
       <Section>
         <SubHeader>REGISTERED PATIENTS</SubHeader>
         <SearchBar
           type="text"
           value={searchPatient}
-          onChange={(e) => setSearchPatient(e.target.value)}
+          onChange={handleSearchPatient}
           placeholder="Search patients..."
+          maxLength="50"
         />
         <List>
           {filteredPatients.length > 0 ? (
@@ -178,8 +291,9 @@ const MClistappointment = () => {
         <SearchBar
           type="text"
           value={searchAppointment}
-          onChange={(e) => setSearchAppointment(e.target.value)}
+          onChange={handleSearchAppointment}
           placeholder="Search appointments..."
+          maxLength="50"
         />
         <List>
           {filteredAppointments.length > 0 ? (

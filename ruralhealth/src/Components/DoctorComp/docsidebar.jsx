@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Calendar, Plus, LogOut, Camera, User } from "lucide-react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
@@ -143,41 +143,142 @@ const ButtonGroup = styled.div`
   margin-top: 60px;
 `;
 
+const ErrorMessage = styled.div`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 10px;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+`;
+
+const LoadingMessage = styled.div`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem;
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+  border-radius: 10px;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+`;
+
 const Sidebar = ({ isOpen, toggleSidebar, selectedButton, setSelectedButton }) => {
   const [image, setImage] = useState(null);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate(); // Initialize navigate function
 
+  // Validate props
+  useEffect(() => {
+    if (typeof isOpen !== 'boolean' || typeof selectedButton !== 'string') {
+      console.error('Invalid props received in Sidebar component');
+      setError('Component configuration error');
+    }
+  }, [isOpen, selectedButton]);
+
   const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
+    try {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please upload an image file');
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('Image size should be less than 5MB');
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result);
       };
+      reader.onerror = () => {
+        throw new Error('Error reading image file');
+      };
       reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setError(error.message || 'Error uploading image');
+      // Clear the file input
+      event.target.value = '';
     }
   };
 
-  const handleLogout = () => {
-    
-    navigate("/");
+  const handleButtonClick = (buttonName) => {
+    try {
+      if (!buttonName || typeof buttonName !== 'string') {
+        throw new Error('Invalid button name');
+      }
+      setSelectedButton(buttonName);
+    } catch (error) {
+      console.error('Error handling button click:', error);
+      setError('Error changing view');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      setError(null);
+      
+      // Add any cleanup logic here (e.g., clearing session data)
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate cleanup
+      
+      navigate("/");
+    } catch (error) {
+      console.error('Error during logout:', error);
+      setError('Error during logout. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
     <div style={{ display: "flex" }}>
+      {error && (
+        <ErrorMessage>
+          {error}
+        </ErrorMessage>
+      )}
+      {isLoading && (
+        <LoadingMessage>
+          Loading...
+        </LoadingMessage>
+      )}
+      
       <SidebarContainer $isOpen={isOpen}>
-        <ToggleButton onClick={toggleSidebar}>
+        <ToggleButton 
+          onClick={toggleSidebar}
+          disabled={isLoggingOut}
+        >
           <div />
         </ToggleButton>
 
         <LogoContainer $isOpen={isOpen}>
-          <HiddenFileInput type="file" accept="image/*" onChange={handleImageUpload} />
+          <HiddenFileInput 
+            type="file" 
+            accept="image/*" 
+            onChange={handleImageUpload}
+            disabled={isLoggingOut}
+          />
           <UploadCircle>
             {image ? (
               <img
                 src={image}
                 alt="Profile"
                 style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
+                onError={() => setError('Error loading profile image')}
               />
             ) : (
               <Camera size={54} color="#555" />
@@ -190,7 +291,8 @@ const Sidebar = ({ isOpen, toggleSidebar, selectedButton, setSelectedButton }) =
           <Button
             $isOpen={isOpen}
             className={selectedButton === "patientdiagnosis" ? "selected" : ""}
-            onClick={() => setSelectedButton("patientdiagnosis")}
+            onClick={() => handleButtonClick("patientdiagnosis")}
+            disabled={isLoggingOut}
           >
             <Plus />
             {isOpen && <span>Patient Diagnosis</span>}
@@ -199,7 +301,8 @@ const Sidebar = ({ isOpen, toggleSidebar, selectedButton, setSelectedButton }) =
           <Button
             $isOpen={isOpen}
             className={selectedButton === "appointments" ? "selected" : ""}
-            onClick={() => setSelectedButton("appointments")}
+            onClick={() => handleButtonClick("appointments")}
+            disabled={isLoggingOut}
           >
             <User />
             {isOpen && <span>Appointments</span>}
@@ -207,9 +310,13 @@ const Sidebar = ({ isOpen, toggleSidebar, selectedButton, setSelectedButton }) =
         </ButtonGroup>
 
         <Footer $isOpen={isOpen}>
-          <Button $isOpen={isOpen} onClick={handleLogout}> 
+          <Button 
+            $isOpen={isOpen} 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          >
             <LogOut />
-            {isOpen && <span>Log Out</span>}
+            {isOpen && <span>{isLoggingOut ? 'Logging Out...' : 'Log Out'}</span>}
           </Button>
         </Footer>
       </SidebarContainer>
