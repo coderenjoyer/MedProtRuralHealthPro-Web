@@ -387,6 +387,8 @@ function PatientInformation({ onRegister, onError }) {
                                 value={formData.lastName}
                                 onChange={(e) => handleInputChange(e, null, 'lastName')}
                                 required
+                                pattern="^[A-Za-z\s\-'\.]+$"
+                                title="Only letters, spaces, hyphens, apostrophes, and periods are allowed"
                                 style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                             />
                             {hasError(null, 'lastName') && 
@@ -401,6 +403,8 @@ function PatientInformation({ onRegister, onError }) {
                                 value={formData.firstName}
                                 onChange={(e) => handleInputChange(e, null, 'firstName')}
                                 required
+                                pattern="^[A-Za-z\s\-'\.]+$"
+                                title="Only letters, spaces, hyphens, apostrophes, and periods are allowed"
                                 style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                             />
                             {hasError(null, 'firstName') && 
@@ -414,6 +418,8 @@ function PatientInformation({ onRegister, onError }) {
                                 className="form-control light-theme"
                                 value={formData.middleName}
                                 onChange={(e) => handleInputChange(e, null, 'middleName')}
+                                pattern="^[A-Za-z\s\-'\.]*$"
+                                title="Only letters, spaces, hyphens, apostrophes, and periods are allowed"
                                 style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                             />
                         </div>
@@ -427,6 +433,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.address.street}
                             onChange={(e) => handleInputChange(e, 'address', 'street')}
                             required
+                            maxLength="100"
                             style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('address', 'street') && 
@@ -468,6 +475,8 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.address.municipality}
                             onChange={(e) => handleInputChange(e, 'address', 'municipality')}
                             required
+                            pattern="^[A-Za-z\s\-'\.]+$"
+                            title="Only letters, spaces, hyphens, apostrophes, and periods are allowed"
                             style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('address', 'municipality') && 
@@ -483,6 +492,8 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.address.province}
                             onChange={(e) => handleInputChange(e, 'address', 'province')}
                             required
+                            pattern="^[A-Za-z\s\-'\.]+$"
+                            title="Only letters, spaces, hyphens, apostrophes, and periods are allowed"
                             style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('address', 'province') && 
@@ -497,6 +508,8 @@ function PatientInformation({ onRegister, onError }) {
                             className={`form-control light-theme ${hasError('address', 'zipcode') ? 'is-invalid' : ''}`}
                             value={formData.address.zipcode}
                             onChange={(e) => handleInputChange(e, 'address', 'zipcode')}
+                            pattern="^\d{4,5}$"
+                            title="Zip code must be 4-5 digits"
                             style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('address', 'zipcode') && 
@@ -602,6 +615,8 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.contactInfo.email}
                             onChange={(e) => handleInputChange(e, 'contactInfo', 'email')}
                             placeholder="example@email.com"
+                            pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                            title="Please enter a valid email address"
                             style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('contactInfo', 'email') && 
@@ -617,6 +632,8 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.contactInfo.phoneNumber}
                             onChange={(e) => handleInputChange(e, 'contactInfo', 'phoneNumber')}
                             placeholder="+63 XXX XXX XXXX"
+                            pattern="^(\+63|0)[\d\s\-]{9,}$"
+                            title="Please enter a valid Philippine phone number (e.g., +63 XXX XXX XXXX or 09XX XXX XXXX)"
                             required
                             style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
@@ -636,6 +653,17 @@ function PatientInformation({ onRegister, onError }) {
                             min="1" 
                             max="300"
                             step="0.1"
+                            onKeyDown={(e) => {
+                                // Prevent non-numeric entries except for period, backspace, tab, arrow keys, etc.
+                                if (!/^[0-9\.\b]+$/.test(e.key) && 
+                                    e.key !== 'Delete' && 
+                                    e.key !== 'ArrowLeft' && 
+                                    e.key !== 'ArrowRight' && 
+                                    e.key !== 'Tab' && 
+                                    e.key !== 'Backspace') {
+                                    e.preventDefault();
+                                }
+                            }}
                             style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('medicalInfo', 'height') && 
@@ -653,6 +681,17 @@ function PatientInformation({ onRegister, onError }) {
                             min="1" 
                             max="700"
                             step="0.1"
+                            onKeyDown={(e) => {
+                                // Prevent non-numeric entries except for period, backspace, tab, arrow keys, etc.
+                                if (!/^[0-9\.\b]+$/.test(e.key) && 
+                                    e.key !== 'Delete' && 
+                                    e.key !== 'ArrowLeft' && 
+                                    e.key !== 'ArrowRight' && 
+                                    e.key !== 'Tab' && 
+                                    e.key !== 'Backspace') {
+                                    e.preventDefault();
+                                }
+                            }}
                             style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
                         />
                         {hasError('medicalInfo', 'weight') && 

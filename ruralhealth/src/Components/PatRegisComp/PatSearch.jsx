@@ -81,7 +81,12 @@ function PatientSearch() {
     };
 
     const handleSearch = (event) => {
-        setSearchTerm(event.target.value);
+        const value = event.target.value;
+        
+        // Optional: Filter out invalid characters in real-time
+        const sanitizedValue = value.replace(/[^A-Za-z0-9\s\-'\.]/g, '');
+        
+        setSearchTerm(sanitizedValue);
     };
 
     const executeSearch = () => {
@@ -203,6 +208,9 @@ function PatientSearch() {
                         value={searchTerm}
                         onChange={handleSearch}
                         onKeyPress={(e) => e.key === 'Enter' && executeSearch()}
+                        maxLength="50"
+                        pattern="^[A-Za-z0-9\s\-'\.]+$"
+                        title="Only alphanumeric characters, spaces, hyphens, apostrophes, and periods are allowed"
                         style={{
                             padding: '8px 12px',
                             border: '1px solid #ddd',

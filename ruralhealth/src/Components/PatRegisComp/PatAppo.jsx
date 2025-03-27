@@ -157,6 +157,8 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         appointmentTime: '',
         description: ''
     });
+    const [formErrors, setFormErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Load all patients from Firebase
     useEffect(() => {
@@ -251,14 +253,19 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         }));
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
         if (!selectedPatient) {
             toast.error("Please select a patient first");
+            setIsSubmitting(false);
             return;
         }
 
         if (!formData.appointmentDate || !formData.appointmentTime) {
             toast.error("Please select both date and time for the appointment");
+            setIsSubmitting(false);
             return;
         }
 
@@ -287,6 +294,8 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         } catch (error) {
             console.error("Error scheduling appointment:", error);
             toast.error("Failed to schedule appointment");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -346,6 +355,109 @@ function Appointments({ selectedPatient, onPatientSelect }) {
     // Format time for display
     const formatTime = (timeString) => {
         return timeString.substring(0, 5); // Remove seconds if present
+    };
+
+    const validateForm = () => {
+        const errors = {};
+        let isValid = true;
+
+        // Required fields
+        if (!formData.firstName.trim()) {
+            errors.firstName = "First name is required";
+            isValid = false;
+        } else if (!/^[A-Za-z\s\-'\.]+$/.test(formData.firstName)) {
+            errors.firstName = "First name contains invalid characters";
+            isValid = false;
+        }
+
+        if (!formData.lastName.trim()) {
+            errors.lastName = "Last name is required";
+            isValid = false;
+        } else if (!/^[A-Za-z\s\-'\.]+$/.test(formData.lastName)) {
+            errors.lastName = "Last name contains invalid characters";
+            isValid = false;
+        }
+
+        if (formData.middleName && !/^[A-Za-z\s\-'\.]*$/.test(formData.middleName)) {
+            errors.middleName = "Middle name contains invalid characters";
+            isValid = false;
+        }
+
+        // Email validation (if provided)
+        if (formData.email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
+            errors.email = "Invalid email format";
+            isValid = false;
+        }
+
+        // Phone validation
+        if (!formData.phoneNumber) {
+            errors.phoneNumber = "Phone number is required";
+            isValid = false;
+        } else if (!/^(\+63|0)[\d\s\-]{9,}$/.test(formData.phoneNumber)) {
+            errors.phoneNumber = "Please enter a valid Philippine phone number";
+            isValid = false;
+        }
+
+        // Date validation
+        if (!formData.appointmentDate) {
+            errors.appointmentDate = "Appointment date is required";
+            isValid = false;
+        } else {
+            const selectedDate = new Date(formData.appointmentDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate < today) {
+                errors.appointmentDate = "Appointment date cannot be in the past";
+                isValid = false;
+            }
+            
+            const oneYearFromNow = new Date();
+            oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+            
+            if (selectedDate > oneYearFromNow) {
+                errors.appointmentDate = "Appointment date cannot be more than a year in the future";
+                isValid = false;
+            }
+        }
+
+        // Time validation
+        if (!formData.appointmentTime) {
+            errors.appointmentTime = "Appointment time is required";
+            isValid = false;
+        } else {
+            const [hours, minutes] = formData.appointmentTime.split(':').map(Number);
+            
+            // Check if appointment is within business hours (8 AM to 5 PM)
+            if (hours < 8 || hours > 17 || (hours === 17 && minutes > 0)) {
+                errors.appointmentTime = "Appointments are only available between 8:00 AM and 5:00 PM";
+                isValid = false;
+            }
+            
+            // Check for past time if appointment is today
+            if (formData.appointmentDate === new Date().toISOString().split('T')[0]) {
+                const now = new Date();
+                const appointmentTime = new Date();
+                appointmentTime.setHours(hours, minutes, 0, 0);
+                
+                if (appointmentTime < now) {
+                    errors.appointmentTime = "Appointment time cannot be in the past";
+                    isValid = false;
+                }
+            }
+        }
+
+        // Description validation
+        if (!formData.description.trim()) {
+            errors.description = "Appointment description is required";
+            isValid = false;
+        } else if (formData.description.length > 500) {
+            errors.description = "Description is too long (maximum 500 characters)";
+            isValid = false;
+        }
+
+        setFormErrors(errors);
+        return isValid;
     };
 
     return (
@@ -408,60 +520,173 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                     <p style={{ color: '#000000' }}>Please select a patient from the list to schedule an appointment</p>
                                 </div>
                             )}
-                            <PatientInfoGrid>
-                                <PatientInfoItem>
-                                    <label>Appointment Date</label>
+                            <form className="appointment-form" onSubmit={handleSubmit}>
+                                <h3>Patient Information</h3>
+                                
+                                <div className="name-fields">
+                                    <div className="form-group">
+                                        <label>Last Name *</label>
+                                        <input 
+                                            type="text" 
+                                            name="lastName"
+                                            className={`form-control ${formErrors.lastName ? 'is-invalid' : ''}`}
+                                            value={formData.lastName}
+                                            onChange={handleInputChange}
+                                            required 
+                                            pattern="^[A-Za-z\s\-'\.]+$"
+                                            title="Only letters, spaces, hyphens, apostrophes, and periods are allowed"
+                                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                                        />
+                                        {formErrors.lastName && (
+                                            <div className="invalid-feedback">{formErrors.lastName}</div>
+                                        )}
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>First Name *</label>
+                                        <input 
+                                            type="text" 
+                                            name="firstName"
+                                            className={`form-control ${formErrors.firstName ? 'is-invalid' : ''}`}
+                                            value={formData.firstName}
+                                            onChange={handleInputChange}
+                                            required
+                                            pattern="^[A-Za-z\s\-'\.]+$"
+                                            title="Only letters, spaces, hyphens, apostrophes, and periods are allowed"
+                                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                                        />
+                                        {formErrors.firstName && (
+                                            <div className="invalid-feedback">{formErrors.firstName}</div>
+                                        )}
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Middle Name</label>
+                                        <input 
+                                            type="text" 
+                                            name="middleName"
+                                            className={`form-control ${formErrors.middleName ? 'is-invalid' : ''}`}
+                                            value={formData.middleName}
+                                            onChange={handleInputChange}
+                                            pattern="^[A-Za-z\s\-'\.]*$"
+                                            title="Only letters, spaces, hyphens, apostrophes, and periods are allowed"
+                                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                                        />
+                                        {formErrors.middleName && (
+                                            <div className="invalid-feedback">{formErrors.middleName}</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Email</label>
+                                    <input 
+                                        type="email" 
+                                        name="email"
+                                        className={`form-control ${formErrors.email ? 'is-invalid' : ''}`}
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        placeholder="example@email.com"
+                                        pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                                        title="Please enter a valid email address"
+                                        style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                                    />
+                                    {formErrors.email && (
+                                        <div className="invalid-feedback">{formErrors.email}</div>
+                                    )}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Phone Number *</label>
+                                    <input 
+                                        type="tel" 
+                                        name="phoneNumber"
+                                        className={`form-control ${formErrors.phoneNumber ? 'is-invalid' : ''}`}
+                                        value={formData.phoneNumber}
+                                        onChange={handleInputChange}
+                                        placeholder="+63 XXX XXX XXXX"
+                                        pattern="^(\+63|0)[\d\s\-]{9,}$"
+                                        title="Please enter a valid Philippine phone number (e.g., +63 XXX XXX XXXX or 09XX XXX XXXX)"
+                                        required
+                                        style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                                    />
+                                    {formErrors.phoneNumber && (
+                                        <div className="invalid-feedback">{formErrors.phoneNumber}</div>
+                                    )}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Appointment Date *</label>
                                     <input 
                                         type="date" 
                                         name="appointmentDate"
+                                        className={`form-control ${formErrors.appointmentDate ? 'is-invalid' : ''}`}
                                         value={formData.appointmentDate}
                                         onChange={handleInputChange}
                                         min={new Date().toISOString().split('T')[0]}
-                                        disabled={!currentPatient}
-                                        autoFocus
+                                        max={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]} // Max 1 year in future
+                                        required
+                                        style={{ backgroundColor: '#ffffff', color: '#000000' }}
                                     />
-                                </PatientInfoItem>
-                                <PatientInfoItem>
-                                    <label>Appointment Time</label>
+                                    {formErrors.appointmentDate && (
+                                        <div className="invalid-feedback">{formErrors.appointmentDate}</div>
+                                    )}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Appointment Time *</label>
                                     <input 
                                         type="time" 
                                         name="appointmentTime"
+                                        className={`form-control ${formErrors.appointmentTime ? 'is-invalid' : ''}`}
                                         value={formData.appointmentTime}
                                         onChange={handleInputChange}
-                                        disabled={!currentPatient}
+                                        min="08:00"
+                                        max="17:00"
+                                        step="1800" // 30-minute intervals
+                                        required
+                                        style={{ backgroundColor: '#ffffff', color: '#000000' }}
                                     />
-                                </PatientInfoItem>
-                                <PatientInfoItem style={{ gridColumn: '1 / -1' }}>
-                                    <label>Appointment Description</label>
+                                    {formErrors.appointmentTime && (
+                                        <div className="invalid-feedback">{formErrors.appointmentTime}</div>
+                                    )}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Appointment Description *</label>
                                     <textarea 
                                         name="description"
+                                        className={`form-control ${formErrors.description ? 'is-invalid' : ''}`}
                                         value={formData.description}
                                         onChange={handleInputChange}
                                         rows="3"
-                                        style={{ width: '100%', padding: '8px' }}
-                                        disabled={!currentPatient}
+                                        required
+                                        maxLength="500"
+                                        style={{ backgroundColor: '#ffffff', color: '#000000' }}
                                     ></textarea>
-                                </PatientInfoItem>
-                            </PatientInfoGrid>
-
-                            <div className="button-group" style={{ marginTop: '20px' }}>
-                                <button 
-                                    className="btn clear-btn" 
-                                    onClick={handleClear}
-                                    disabled={!currentPatient}
-                                    style={{ color: '#000000' }}
-                                >
-                                    Clear
-                                </button>
-                                <button 
-                                    className="btn confirm-btn" 
-                                    onClick={handleSubmit}
-                                    disabled={!currentPatient}
-                                    style={{ color: '#000000' }}
-                                >
-                                    Schedule Appointment
-                                </button>
-                            </div>
+                                    {formErrors.description && (
+                                        <div className="invalid-feedback">{formErrors.description}</div>
+                                    )}
+                                </div>
+                                
+                                {/* Buttons section */}
+                                <div className="button-group">
+                                    <button 
+                                        type="button" 
+                                        className="btn clear-btn" 
+                                        onClick={handleClear}
+                                    >
+                                        Clear Appointment
+                                    </button>
+                                    <button 
+                                        type="submit" 
+                                        className="btn confirm-btn"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? 'Processing...' : 'Confirm Appointment'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </AppointmentFormRef>
                 </AppointmentManagementSection>

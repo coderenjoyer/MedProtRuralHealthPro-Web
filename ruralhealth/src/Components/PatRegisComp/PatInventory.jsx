@@ -159,6 +159,7 @@ function ManageInventory() {
     });
     const [editingId, setEditingId] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [formErrors, setFormErrors] = useState({});
 
     // Function to generate a 3-digit ID
     const generateThreeDigitId = () => {
@@ -257,6 +258,67 @@ function ManageInventory() {
         medicine.brand.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // Add validation function
+    const validateForm = () => {
+        const errors = {};
+        let isValid = true;
+
+        // Medicine name validation
+        if (!formData.name.trim()) {
+            errors.name = "Medicine name is required";
+            isValid = false;
+        } else if (!/^[A-Za-z0-9\s\-'\.()]+$/.test(formData.name)) {
+            errors.name = "Medicine name contains invalid characters";
+            isValid = false;
+        }
+
+        // Brand validation (optional)
+        if (formData.brand && !/^[A-Za-z0-9\s\-'\.()]+$/.test(formData.brand)) {
+            errors.brand = "Medicine brand contains invalid characters";
+            isValid = false;
+        }
+
+        // Description validation (optional but with length limit)
+        if (formData.description && formData.description.length > 500) {
+            errors.description = "Description is too long (maximum 500 characters)";
+            isValid = false;
+        }
+
+        // Quantity validation
+        const quantity = parseInt(formData.quantity);
+        if (isNaN(quantity) || quantity < 1) {
+            errors.quantity = "Quantity must be a positive number";
+            isValid = false;
+        } else if (quantity > 999999) {
+            errors.quantity = "Quantity is too large (maximum 999,999)";
+            isValid = false;
+        }
+
+        // Expiry date validation (optional)
+        if (formData.expiryDate) {
+            const selectedDate = new Date(formData.expiryDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate < today) {
+                errors.expiryDate = "Expiry date cannot be in the past";
+                isValid = false;
+            }
+        }
+
+        setFormErrors(errors);
+        return isValid;
+    };
+
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        
+        // Optional: Filter out invalid characters in real-time
+        const sanitizedValue = value.replace(/[^A-Za-z0-9\s\-'\.]/g, '');
+        
+        setSearchTerm(sanitizedValue);
+    };
+
     return (
         <InventoryContainer>
             <MedicineManagement>
@@ -270,14 +332,23 @@ function ManageInventory() {
 
                 <form onSubmit={handleSubmit}>
                     <FormGroup>
-                        <label>Medicine Name</label>
+                        <label>Medicine Name *</label>
                         <input 
                             type="text" 
                             name="name"
+                            className={`form-control ${formErrors.name ? 'is-invalid' : ''}`} 
                             value={formData.name}
                             onChange={handleInputChange}
+                            disabled={!!editingId}
                             required
+                            maxLength="100"
+                            pattern="^[A-Za-z0-9\s\-'\.()]+$"
+                            title="Only alphanumeric characters, spaces, hyphens, apostrophes, periods, and parentheses are allowed"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
+                        {formErrors.name && (
+                            <div className="invalid-feedback">{formErrors.name}</div>
+                        )}
                     </FormGroup>
 
                     <FormGroup>
@@ -285,32 +356,63 @@ function ManageInventory() {
                         <input 
                             type="text" 
                             name="brand"
+                            className={`form-control ${formErrors.brand ? 'is-invalid' : ''}`}
                             value={formData.brand}
                             onChange={handleInputChange}
-                            required
+                            maxLength="100"
+                            pattern="^[A-Za-z0-9\s\-'\.()]+$"
+                            title="Only alphanumeric characters, spaces, hyphens, apostrophes, periods, and parentheses are allowed"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
+                        {formErrors.brand && (
+                            <div className="invalid-feedback">{formErrors.brand}</div>
+                        )}
                     </FormGroup>
 
                     <FormGroup>
                         <label>Medicine Description</label>
                         <textarea 
                             name="description"
+                            className={`form-control ${formErrors.description ? 'is-invalid' : ''}`}
+                            rows="3"
                             value={formData.description}
                             onChange={handleInputChange}
-                            required
+                            maxLength="500"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         ></textarea>
+                        {formErrors.description && (
+                            <div className="invalid-feedback">{formErrors.description}</div>
+                        )}
                     </FormGroup>
 
                     <FormGroup>
-                        <label>Quantity</label>
+                        <label>Quantity *</label>
                         <input 
                             type="number" 
                             name="quantity"
+                            className={`form-control ${formErrors.quantity ? 'is-invalid' : ''}`} 
                             value={formData.quantity}
                             onChange={handleInputChange}
+                            min="1"
+                            max="999999"
+                            step="1"
+                            onKeyDown={(e) => {
+                                // Prevent non-numeric entries except for control keys
+                                if (!/^[0-9\b]+$/.test(e.key) && 
+                                    e.key !== 'Delete' && 
+                                    e.key !== 'ArrowLeft' && 
+                                    e.key !== 'ArrowRight' && 
+                                    e.key !== 'Tab' && 
+                                    e.key !== 'Backspace') {
+                                    e.preventDefault();
+                                }
+                            }}
                             required
-                            min="0"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
+                        {formErrors.quantity && (
+                            <div className="invalid-feedback">{formErrors.quantity}</div>
+                        )}
                     </FormGroup>
 
                     <FormGroup>
@@ -318,10 +420,15 @@ function ManageInventory() {
                         <input 
                             type="date" 
                             name="expiryDate"
+                            className={`form-control ${formErrors.expiryDate ? 'is-invalid' : ''}`} 
                             value={formData.expiryDate}
                             onChange={handleInputChange}
-                            required
+                            min={new Date().toISOString().split('T')[0]} // Today or future dates only
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
+                        {formErrors.expiryDate && (
+                            <div className="invalid-feedback">{formErrors.expiryDate}</div>
+                        )}
                     </FormGroup>
 
                     <ButtonGroup>
@@ -342,8 +449,13 @@ function ManageInventory() {
                         <input 
                             type="text" 
                             placeholder="Search medicine..." 
+                            className="search-input"
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={handleSearchChange}
+                            maxLength="50"
+                            pattern="^[A-Za-z0-9\s\-'\.]+$"
+                            title="Only alphanumeric characters, spaces, hyphens, apostrophes, and periods are allowed"
+                            style={{ backgroundColor: '#ffffff', color: '#000000' }}
                         />
                         <button>
                             <Search size={20} />
