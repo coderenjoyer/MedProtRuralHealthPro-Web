@@ -6,6 +6,7 @@ import { FaBars, FaSearch } from "react-icons/fa"
 import { useState, useEffect } from "react"
 import { ref, onValue, remove } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
+import { useNavigate } from "react-router-dom";
 
 const PageContainer = styled.div`
   display: flex;
@@ -152,14 +153,69 @@ const PatientProfileSection = styled.div`
   }
 `;
 
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(9, 93, 126, 0.3);
+  border-radius: 50%;
+  border-top-color: #095D7E;
+  animation: spin 1s ease-in-out infinite;
+  margin: 20px auto;
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 1rem;
+  border-radius: 4px;
+  margin: 1rem;
+  text-align: center;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+`;
+
+const RetryButton = styled.button`
+  background-color: #095D7E;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #0d4a63;
+  }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
 const SearchBar = styled.div`
   display: flex;
   align-items: center;
   background: white;
-  border: 1px solid #095D7E;
+  border: 1px solid ${props => props.$hasError ? '#dc3545' : '#095D7E'};
   border-radius: 6px;
   padding: 10px 15px;
   margin-bottom: 20px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
   
   svg {
     color: #095D7E;
@@ -175,8 +231,12 @@ const SearchBar = styled.div`
     &::placeholder {
       color: #999;
     }
+
+    &:focus {
+      box-shadow: 0 0 0 2px ${props => props.$hasError ? 'rgba(220, 53, 69, 0.25)' : 'rgba(9, 93, 126, 0.25)'};
+    }
   }
-`
+`;
 
 const TableContainer = styled.div`
   width: 100%;
@@ -276,282 +336,324 @@ const PhotoPlaceholder = styled.div`
 `
 
 const DeleteButton = styled.button`
-  background-color: #095D7E;
+  background-color: #dc3545;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  margin-top: 20px;
-  align-self: flex-end;
-  font-weight: 500;
-  transition: background-color 0.2s;
-  
+  transition: background-color 0.3s;
+
   &:hover {
-    background-color: #074a63;
+    background-color: #c82333;
+  }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
   }
 `
 
 export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setActivePage, activePage }) {
-  const [selectedPatient, setSelectedPatient] = useState(null);
   const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [searchError, setSearchError] = useState(null);
+  const navigate = useNavigate();
 
+  // Validate user session
   useEffect(() => {
-    const patientsRef = ref(database, 'rhp/patients');
-    
-    const unsubscribe = onValue(patientsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        // Convert Firebase object to array and add the Firebase key as id
-        const patientsArray = Object.entries(data).map(([key, value]) => ({
-          id: key,
-          ...value.personalInfo,
-          ...value.medicalInfo,
-          ...value.contactInfo
-        }));
-        setPatients(patientsArray);
-      } else {
-        setPatients([]);
-      }
-      setLoading(false);
-    });
-
-    // Cleanup subscription
-    return () => unsubscribe();
-  }, []);
-
-  const handleDeletePatient = async (patientId) => {
-    if (window.confirm('Are you sure you want to delete this patient?')) {
+    const validateSession = () => {
       try {
-        const patientRef = ref(database, `rhp/patients/${patientId}`);
-        await remove(patientRef);
-        setSelectedPatient(null);
+        const user = localStorage.getItem("user")
+        if (!user) {
+          throw new Error('No active session found')
+        }
+
+        const userData = JSON.parse(user)
+        if (userData.type !== "Staff-Admin") {
+          throw new Error('Unauthorized access')
+        }
+
+        // Additional session validation logic here
       } catch (error) {
-        console.error('Error deleting patient:', error);
-        alert('Failed to delete patient');
+        console.error('Session validation error:', error)
+        setError(error.message)
+        // Redirect to login after showing error
+        setTimeout(() => {
+          navigate("/login")
+        }, 2000)
       }
+    }
+
+    validateSession()
+  }, [navigate])
+
+  const fetchPatients = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setIsRetrying(false)
+
+      const patientsRef = ref(database, 'rhp/patients');
+      const unsubscribe = onValue(patientsRef, (snapshot) => {
+        try {
+          const data = snapshot.val();
+          if (data) {
+            const patientsList = Object.entries(data).map(([id, patient]) => ({
+              id,
+              ...patient
+            }));
+            setPatients(patientsList);
+          } else {
+            setPatients([]);
+          }
+        } catch (error) {
+          console.error('Error processing patient data:', error);
+          setError('Error loading patient data');
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('Error setting up patient listener:', error);
+      setError('Failed to connect to database');
+      setLoading(false);
     }
   };
 
-  const filteredPatients = patients.filter(patient => 
-    patient.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.id?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    const unsubscribe = fetchPatients();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  const handleSearch = (e) => {
+    try {
+      const value = e.target.value;
+      // Sanitize input - only allow alphanumeric characters, spaces, and basic punctuation
+      const sanitizedValue = value.replace(/[^A-Za-z0-9\s\-'\.]/g, '');
+      setSearchTerm(sanitizedValue);
+      setSearchError(null);
+    } catch (error) {
+      console.error('Error handling search:', error);
+      setSearchError('Error processing search input');
+    }
+  };
+
+  const handleDeletePatient = async (patientId) => {
+    if (!window.confirm("Are you sure you want to delete this patient? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const patientRef = ref(database, `rhp/patients/${patientId}`);
+      await remove(patientRef);
+      
+      // Clear selected patient if it was deleted
+      if (selectedPatient?.id === patientId) {
+        setSelectedPatient(null);
+      }
+    } catch (error) {
+      console.error('Error deleting patient:', error);
+      setError('Failed to delete patient');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    setIsRetrying(true);
+    fetchPatients();
+  };
+
+  const filteredPatients = patients.filter(patient => {
+    if (!searchTerm.trim()) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      patient.personalInfo?.firstName?.toLowerCase().includes(searchLower) ||
+      patient.personalInfo?.lastName?.toLowerCase().includes(searchLower) ||
+      patient.personalInfo?.middleName?.toLowerCase().includes(searchLower) ||
+      patient.contactInfo?.address?.barangay?.toLowerCase().includes(searchLower) ||
+      patient.contactInfo?.contactNumber?.includes(searchTerm)
+    );
+  });
+
+  if (error) {
+    return (
+      <PageContainer>
+        <Sidebar isOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} setActivePage={setActivePage} activePage={activePage} />
+        <MainContent $isSidebarOpen={isSidebarOpen}>
+          <ErrorMessage>
+            {error}
+            <p>Redirecting to login...</p>
+          </ErrorMessage>
+        </MainContent>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
-      <Sidebar isOpen={isSidebarOpen} setActivePage={setActivePage} activePage={activePage} />
+      <Sidebar isOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} setActivePage={setActivePage} activePage={activePage} />
       <MainContent $isSidebarOpen={isSidebarOpen}>
         <ContentContainer>
           <Header>
             <MenuButton onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
               <FaBars />
             </MenuButton>
-            <Title>PATIENT DATABASE</Title>
+            <Title>Patient Database</Title>
           </Header>
 
           <PanelsContainer>
             <PatientListSection>
-              <SearchBar>
+              <SearchBar $hasError={!!searchError}>
                 <FaSearch />
-                <input 
-                  type="text" 
-                  placeholder="Search by name or ID..." 
+                <input
+                  type="text"
+                  placeholder="Search patients..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={handleSearch}
+                  maxLength="50"
+                  pattern="[A-Za-z0-9\s\-'\.]+"
+                  title="Only letters, numbers, spaces, hyphens, apostrophes, and periods are allowed"
                 />
               </SearchBar>
+              {searchError && <ErrorMessage>{searchError}</ErrorMessage>}
 
-              <TableContainer>
-                {loading ? (
-                  <div style={{ textAlign: 'center', padding: '20px' }}>Loading patients...</div>
-                ) : (
+              {loading ? (
+                <LoadingContainer>
+                  <LoadingSpinner />
+                  <p>Loading patients...</p>
+                </LoadingContainer>
+              ) : (
+                <TableContainer>
                   <Table>
                     <thead>
                       <tr>
-                        <Th>ID</Th>
-                        <Th>Last Name</Th>
-                        <Th>First Name</Th>
-                        <Th>Date of Birth</Th>
-                        <Th>Gender</Th>
-                        <Th>Height</Th>
-                        <Th>Weight</Th>
+                        <Th>Name</Th>
+                        <Th>Barangay</Th>
+                        <Th>Contact</Th>
+                        <Th>Actions</Th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredPatients.map((patient) => (
-                        <Tr 
-                          key={patient.id} 
-                          className={selectedPatient?.id === patient.id ? "selected" : ""}
-                          onClick={() => setSelectedPatient(patient)}
-                        >
-                          <Td>{patient.id}</Td>
-                          <Td>{patient.lastName}</Td>
-                          <Td>{patient.firstName}</Td>
-                          <Td>{patient.dateOfBirth}</Td>
-                          <Td>{patient.gender}</Td>
-                          <Td>{patient.height}</Td>
-                          <Td>{patient.weight}</Td>
-                        </Tr>
-                      ))}
+                      {filteredPatients.length > 0 ? (
+                        filteredPatients.map((patient) => (
+                          <Tr
+                            key={patient.id}
+                            className={selectedPatient?.id === patient.id ? 'selected' : ''}
+                            onClick={() => setSelectedPatient(patient)}
+                          >
+                            <Td>
+                              {patient.personalInfo?.lastName}, {patient.personalInfo?.firstName}
+                            </Td>
+                            <Td>{patient.contactInfo?.address?.barangay || 'N/A'}</Td>
+                            <Td>{patient.contactInfo?.contactNumber || 'N/A'}</Td>
+                            <Td>
+                              <DeleteButton
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePatient(patient.id);
+                                }}
+                                disabled={loading}
+                              >
+                                Delete
+                              </DeleteButton>
+                            </Td>
+                          </Tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>
+                            No patients found
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </Table>
-                )}
-              </TableContainer>
+                </TableContainer>
+              )}
             </PatientListSection>
 
             <PatientProfileSection>
-              <ProfileHeader>
-                <h2>PATIENT PROFILE</h2>
-              </ProfileHeader>
-
-              <PhotoPlaceholder />
-
-              <ProfileRow>
-                <ProfileField>
-                  <label>Last Name</label>
-                  <div className="value">{selectedPatient?.lastName || '—'}</div>
-                </ProfileField>
-                <ProfileField>
-                  <label>First Name</label>
-                  <div className="value">{selectedPatient?.firstName || '—'}</div>
-                </ProfileField>
-                <ProfileField>
-                  <label>Middle Name</label>
-                  <div className="value">{selectedPatient?.middleName || '—'}</div>
-                </ProfileField>
-              </ProfileRow>
-
-              <ProfileRow>
-                <ProfileField>
-                  <label>Date of Birth</label>
-                  <div className="value">{selectedPatient?.dateOfBirth || '—'}</div>
-                </ProfileField>
-                <ProfileField>
-                  <label>Gender</label>
-                  <div className="value">{selectedPatient?.gender || '—'}</div>
-                </ProfileField>
-                <ProfileField>
-                  <label>Civil Status</label>
-                  <div className="value">{selectedPatient?.civilStatus || '—'}</div>
-                </ProfileField>
-              </ProfileRow>
-
-              <ProfileRow>
-                <ProfileField>
-                  <label>Occupation</label>
-                  <div className="value">{selectedPatient?.occupation || '—'}</div>
-                </ProfileField>
-                <ProfileField>
-                  <label>Nationality</label>
-                  <div className="value">{selectedPatient?.nationality || '—'}</div>
-                </ProfileField>
-                <ProfileField>
-                  <label>Religion</label>
-                  <div className="value">{selectedPatient?.religion || '—'}</div>
-                </ProfileField>
-              </ProfileRow>
-
-              <ProfileSection>
-                <ProfileField>
-                  <label>Contact Information</label>
-                  <div className="value">
-                    <div>Phone: {selectedPatient?.contactNumber || '—'}</div>
-                    <div>Email: {selectedPatient?.email || '—'}</div>
-                  </div>
-                </ProfileField>
-              </ProfileSection>
-
-              <ProfileSection>
-                <ProfileField>
-                  <label>Emergency Contact</label>
-                  <div className="value">
-                    <div>Name: {selectedPatient?.emergencyContact?.name || '—'}</div>
-                    <div>Relationship: {selectedPatient?.emergencyContact?.relationship || '—'}</div>
-                    <div>Contact: {selectedPatient?.emergencyContact?.contactNumber || '—'}</div>
-                  </div>
-                </ProfileField>
-              </ProfileSection>
-
-              <ProfileSection>
-                <ProfileField>
-                  <label>Complete Address</label>
-                  <div className="value">
-                    {selectedPatient?.address ? (
-                      <>
-                        <div>Street: {selectedPatient.address.street || '—'}</div>
-                        <div>Barangay: {selectedPatient.address.barangay || '—'}</div>
-                        <div>City: {selectedPatient.address.city || '—'}</div>
-                        <div>Province: {selectedPatient.address.province || '—'}</div>
-                        <div>Zip Code: {selectedPatient.address.zipCode || '—'}</div>
-                      </>
-                    ) : '—'}
-                  </div>
-                </ProfileField>
-              </ProfileSection>
-
-              <ProfileSection>
-                <ProfileField>
-                  <label>Medical Information</label>
-                  <div className="value">
-                    <div>Blood Type: {selectedPatient?.bloodType || '—'}</div>
-                    <div>Height: {selectedPatient?.height ? `${selectedPatient.height} cm` : '—'}</div>
-                    <div>Weight: {selectedPatient?.weight ? `${selectedPatient.weight} kg` : '—'}</div>
-                    <div>BMI: {
-                      selectedPatient?.height && selectedPatient?.weight
-                        ? `${(selectedPatient.weight / Math.pow(selectedPatient.height / 100, 2)).toFixed(1)}`
-                        : '—'
-                    }</div>
-                  </div>
-                </ProfileField>
-              </ProfileSection>
-
-              <ProfileSection>
-                <ProfileField>
-                  <label>Medical History</label>
-                  <div className="value">
-                    <div>
-                      <strong>Allergies:</strong><br />
-                      {selectedPatient?.allergies?.length ? selectedPatient.allergies.join(', ') : 'None reported'}
-                    </div>
-                    <div style={{ marginTop: '10px' }}>
-                      <strong>Existing Conditions:</strong><br />
-                      {selectedPatient?.existingConditions?.length ? selectedPatient.existingConditions.join(', ') : 'None reported'}
-                    </div>
-                    <div style={{ marginTop: '10px' }}>
-                      <strong>Current Medications:</strong><br />
-                      {selectedPatient?.medications?.length ? selectedPatient.medications.join(', ') : 'None reported'}
-                    </div>
-                  </div>
-                </ProfileField>
-              </ProfileSection>
-
-              <ProfileSection>
-                <ProfileField>
-                  <label>Registration Information</label>
-                  <div className="value">
-                    <div>Registration Date: {selectedPatient?.registrationInfo?.registrationDate || '—'}</div>
-                    <div>Registration Number: {selectedPatient?.registrationInfo?.registrationNumber || '—'}</div>
-                    <div>Status: {selectedPatient?.registrationInfo?.status || '—'}</div>
-                    <div>Last Visit: {selectedPatient?.registrationInfo?.lastVisit || '—'}</div>
-                    <div>Next Appointment: {selectedPatient?.registrationInfo?.nextAppointment || '—'}</div>
-                  </div>
-                </ProfileField>
-              </ProfileSection>
-
-              {selectedPatient && (
-                <DeleteButton onClick={() => handleDeletePatient(selectedPatient.id)}>
-                  Delete Patient Data
-                </DeleteButton>
+              {selectedPatient ? (
+                <>
+                  <ProfileHeader>
+                    <h2>Patient Profile</h2>
+                  </ProfileHeader>
+                  <ProfileSection>
+                    <ProfileRow>
+                      <div>
+                        <strong>Name:</strong>
+                        <p>
+                          {selectedPatient.personalInfo?.lastName}, {selectedPatient.personalInfo?.firstName}
+                          {selectedPatient.personalInfo?.middleName ? ` ${selectedPatient.personalInfo.middleName}` : ''}
+                        </p>
+                      </div>
+                      <div>
+                        <strong>Gender:</strong>
+                        <p>{selectedPatient.personalInfo?.gender || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <strong>Date of Birth:</strong>
+                        <p>
+                          {selectedPatient.personalInfo?.dateOfBirth
+                            ? new Date(selectedPatient.personalInfo.dateOfBirth).toLocaleDateString()
+                            : 'N/A'}
+                        </p>
+                      </div>
+                    </ProfileRow>
+                    <ProfileRow>
+                      <div>
+                        <strong>Barangay:</strong>
+                        <p>{selectedPatient.contactInfo?.address?.barangay || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <strong>Contact Number:</strong>
+                        <p>{selectedPatient.contactInfo?.contactNumber || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <strong>Email:</strong>
+                        <p>{selectedPatient.contactInfo?.email || 'N/A'}</p>
+                      </div>
+                    </ProfileRow>
+                    <ProfileRow>
+                      <div>
+                        <strong>Registration Date:</strong>
+                        <p>
+                          {selectedPatient.registrationInfo?.registrationDate
+                            ? new Date(selectedPatient.registrationInfo.registrationDate).toLocaleDateString()
+                            : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <strong>Status:</strong>
+                        <p>{selectedPatient.registrationInfo?.status || 'N/A'}</p>
+                      </div>
+                    </ProfileRow>
+                  </ProfileSection>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  Select a patient to view their profile
+                </div>
               )}
             </PatientProfileSection>
           </PanelsContainer>
         </ContentContainer>
       </MainContent>
     </PageContainer>
-  )
+  );
 }
 

@@ -4,6 +4,7 @@ import PatientTable from "../../Components/AdminComp/PatientTable"
 import { useState, useEffect } from "react"
 import { FaBars } from "react-icons/fa"
 import { getAllPatients } from "../../Firebase/patientOperations"
+import { useNavigate } from "react-router-dom"
 
 const DashboardContainer = styled.div`
   display: flex;
@@ -182,11 +183,59 @@ const SectionTitle = styled.h2`
   color: #095D7E;
 `
 
-const LoadingMessage = styled.div`
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(9, 93, 126, 0.3);
+  border-radius: 50%;
+  border-top-color: #095D7E;
+  animation: spin 1s ease-in-out infinite;
+  margin: 20px auto;
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 1rem;
+  border-radius: 4px;
+  margin: 1rem;
   text-align: center;
-  color: #095D7E;
-  font-size: 16px;
-`
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+`;
+
+const RetryButton = styled.button`
+  background-color: #095D7E;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #0d4a63;
+  }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+`;
 
 export default function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -195,7 +244,10 @@ export default function Dashboard() {
     barangayStats: []
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [isRetrying, setIsRetrying] = useState(false)
+  const navigate = useNavigate()
 
   const BARANGAY_LIST = [
     "Poblacion",
@@ -210,114 +262,162 @@ export default function Dashboard() {
     "Other"
   ]
 
+  // Validate user session
+  useEffect(() => {
+    const validateSession = () => {
+      try {
+        const user = localStorage.getItem("user")
+        if (!user) {
+          throw new Error('No active session found')
+        }
+
+        const userData = JSON.parse(user)
+        if (userData.type !== "Staff-Admin") {
+          throw new Error('Unauthorized access')
+        }
+
+        // Additional session validation logic here
+      } catch (error) {
+        console.error('Session validation error:', error)
+        setError(error.message)
+        // Redirect to login after showing error
+        setTimeout(() => {
+          navigate("/login")
+        }, 2000)
+      }
+    }
+
+    validateSession()
+  }, [navigate])
+
   // Time update effect
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
 
-    // Cleanup interval on component unmount
     return () => clearInterval(timer)
   }, [])
 
-  useEffect(() => {
-    const fetchPatientStats = async () => {
-      try {
-        const result = await getAllPatients()
-        if (result.success) {
-          console.log('Fetched patient data:', result.data)
-          
-          // Initialize counts for all barangays
-          const barangayCounts = BARANGAY_LIST.reduce((acc, brgy) => {
-            acc[brgy] = 0
-            return acc
-          }, {})
+  const fetchPatientStats = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setIsRetrying(false)
 
-          // Count patients per barangay
-          Object.values(result.data || {}).forEach(patient => {
-            console.log('Processing patient:', patient)
-            const barangay = patient.contactInfo?.address?.barangay
-            console.log('Patient barangay:', barangay)
-            
-            if (barangay && barangay !== '') {
-              if (BARANGAY_LIST.includes(barangay)) {
-                barangayCounts[barangay] = (barangayCounts[barangay] || 0) + 1
-              } else {
-                barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1
-              }
+      const result = await getAllPatients()
+      if (!result) {
+        throw new Error('No response received from server')
+      }
+
+      if (result.success) {
+        // Initialize counts for all barangays
+        const barangayCounts = BARANGAY_LIST.reduce((acc, brgy) => {
+          acc[brgy] = 0
+          return acc
+        }, {})
+
+        // Count patients per barangay
+        Object.values(result.data || {}).forEach(patient => {
+          if (!patient || typeof patient !== 'object') {
+            console.warn('Invalid patient data:', patient)
+            return
+          }
+
+          const barangay = patient.contactInfo?.address?.barangay
+          if (barangay && barangay !== '') {
+            if (BARANGAY_LIST.includes(barangay)) {
+              barangayCounts[barangay] = (barangayCounts[barangay] || 0) + 1
             } else {
               barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1
             }
-          })
+          } else {
+            barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1
+          }
+        })
 
-          console.log('Barangay counts:', barangayCounts)
+        // Convert to array format for display
+        const barangayStats = Object.entries(barangayCounts).map(([barangay, count]) => ({
+          barangay,
+          count
+        }))
 
-          // Convert to array format for display
-          const barangayStats = BARANGAY_LIST.map(name => ({
-            name,
-            count: barangayCounts[name] || 0
-          }))
-
-          console.log('Final stats:', barangayStats)
-
-          setPatientStats({
-            totalPatients: Object.keys(result.data || {}).length,
-            barangayStats: barangayStats
-          })
-        }
-      } catch (error) {
-        console.error('Error fetching patient statistics:', error)
-      } finally {
-        setLoading(false)
+        setPatientStats({
+          totalPatients: Object.values(barangayCounts).reduce((a, b) => a + b, 0),
+          barangayStats
+        })
+      } else {
+        throw new Error(result.message || 'Failed to fetch patient data')
       }
+    } catch (error) {
+      console.error('Error fetching patient stats:', error)
+      setError(error.message || 'Failed to load patient statistics')
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchPatientStats()
   }, [])
 
+  const handleRetry = () => {
+    setIsRetrying(true)
+    fetchPatientStats()
+  }
+
+  if (error) {
+    return (
+      <DashboardContainer>
+        <Sidebar isOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+        <MainContent $isSidebarOpen={isSidebarOpen}>
+          <ErrorMessage>
+            {error}
+            <p>Redirecting to login...</p>
+          </ErrorMessage>
+        </MainContent>
+      </DashboardContainer>
+    )
+  }
+
   return (
     <DashboardContainer>
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar isOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       <MainContent $isSidebarOpen={isSidebarOpen}>
         <Header>
+          <Title>Admin Dashboard</Title>
+          <Time>{currentTime.toLocaleTimeString()}</Time>
           <MenuButton onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
             <FaBars />
           </MenuButton>
-          <Title>DASHBOARD</Title>
-          <Time>
-            {currentTime.toLocaleString('en-US', { 
-              weekday: 'long',
-              hour: 'numeric',
-              minute: 'numeric',
-              second: 'numeric',
-              hour12: true 
-            })}
-          </Time>
         </Header>
 
-        <TotalPatients>
-          <h2>Total Patients Registered</h2>
-          <p>{loading ? "Loading..." : patientStats.totalPatients}</p>
-        </TotalPatients>
-
-        <SectionTitle>Patient Registered From Different Barangays:</SectionTitle>
-        <StatsGrid>
-          {loading ? (
-            <LoadingMessage>Loading statistics...</LoadingMessage>
-          ) : (
-            patientStats.barangayStats.map((stat, index) => (
-              <StatCard key={index}>
-                <h3>{stat.name}</h3>
-                <p>{stat.count}</p>
+        {loading ? (
+          <LoadingContainer>
+            <LoadingSpinner />
+            <p>Loading dashboard data...</p>
+          </LoadingContainer>
+        ) : (
+          <>
+            <StatsGrid>
+              <StatCard>
+                <h3>Total Patients</h3>
+                <p>{patientStats.totalPatients}</p>
               </StatCard>
-            ))
-          )}
-        </StatsGrid>
+              {patientStats.barangayStats.map((stat, index) => (
+                <StatCard key={index}>
+                  <h3>{stat.barangay}</h3>
+                  <p>{stat.count}</p>
+                </StatCard>
+              ))}
+            </StatsGrid>
 
-        <TableSection>
-          <h2>Recent Patient Data Added:</h2>
-          <PatientTable />
-        </TableSection>
+            <TableSection>
+              <SectionTitle>Recent Patients</SectionTitle>
+              <PatientTable />
+            </TableSection>
+          </>
+        )}
       </MainContent>
     </DashboardContainer>
   )
