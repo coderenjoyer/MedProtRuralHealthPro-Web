@@ -32,16 +32,13 @@ function PatientInformation({ onRegister, onError }) {
         }
     });
     
-    // Add validation states to track field-specific errors
     const [validationErrors, setValidationErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const validateForm = () => {
-        // Reset validation errors
         const errors = {};
         let isValid = true;
 
-        // Required fields validation
         const requiredFields = [
             { field: 'firstName', label: 'First Name' },
             { field: 'lastName', label: 'Last Name' },
@@ -66,7 +63,6 @@ function PatientInformation({ onRegister, onError }) {
             }
         }
 
-        // Email validation - only if email is provided
         if (formData.contactInfo.email) {
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactInfo.email)) {
                 errors['contactInfo.email'] = 'Please enter a valid email address';
@@ -74,7 +70,6 @@ function PatientInformation({ onRegister, onError }) {
             }
         }
 
-        // Phone number validation
         if (formData.contactInfo.phoneNumber) {
             if (!/^\+?[\d\s-]{10,}$/.test(formData.contactInfo.phoneNumber)) {
                 errors['contactInfo.phoneNumber'] = 'Please enter a valid phone number (at least 10 digits)';
@@ -82,31 +77,26 @@ function PatientInformation({ onRegister, onError }) {
             }
         }
 
-        // Age validation
         const age = parseInt(formData.personalInfo.age);
         if (isNaN(age) || age < 0 || age > 150) {
             errors['personalInfo.age'] = 'Please enter a valid age (0-150)';
             isValid = false;
         }
 
-        // Birthdate validation
         if (formData.personalInfo.birthdate) {
             const birthdate = new Date(formData.personalInfo.birthdate);
             const today = new Date();
             
-            // Check if birthdate is in the future
             if (birthdate > today) {
                 errors['personalInfo.birthdate'] = 'Birthdate cannot be in the future';
                 isValid = false;
             }
             
-            // Calculate age from birthdate and compare with entered age
             if (!isNaN(age)) {
                 const birthYear = birthdate.getFullYear();
                 const currentYear = today.getFullYear();
                 const calculatedAge = currentYear - birthYear;
                 
-                // Allow 1 year difference due to different months/days
                 if (Math.abs(calculatedAge - age) > 1) {
                     errors['personalInfo.age'] = 'Age does not match birthdate';
                     isValid = false;
@@ -114,7 +104,6 @@ function PatientInformation({ onRegister, onError }) {
             }
         }
 
-        // Height and weight validation if provided
         if (formData.medicalInfo.height) {
             const height = parseFloat(formData.medicalInfo.height);
             if (isNaN(height) || height <= 0 || height > 300) {
@@ -131,7 +120,6 @@ function PatientInformation({ onRegister, onError }) {
             }
         }
         
-        // BMI validation - check if manually entered BMI matches calculated BMI
         if (formData.medicalInfo.bmi && formData.medicalInfo.height && formData.medicalInfo.weight) {
             const height = parseFloat(formData.medicalInfo.height);
             const weight = parseFloat(formData.medicalInfo.weight);
@@ -140,7 +128,6 @@ function PatientInformation({ onRegister, onError }) {
             if (!isNaN(height) && !isNaN(weight) && height > 0 && weight > 0) {
                 const calculatedBmi = (weight / ((height / 100) * (height / 100))).toFixed(2);
                 
-                // Allow small difference due to rounding
                 if (Math.abs(enteredBmi - calculatedBmi) > 0.1) {
                     errors['medicalInfo.bmi'] = 'BMI does not match height and weight';
                     isValid = false;
@@ -148,7 +135,6 @@ function PatientInformation({ onRegister, onError }) {
             }
         }
 
-        // Zipcode validation if provided
         if (formData.address.zipcode) {
             if (!/^\d{4,5}$/.test(formData.address.zipcode)) {
                 errors['address.zipcode'] = 'Please enter a valid zipcode (4-5 digits)';
@@ -159,7 +145,7 @@ function PatientInformation({ onRegister, onError }) {
         setValidationErrors(errors);
         
         if (!isValid) {
-            onError(Object.values(errors)[0]); // Show first error in the main error UI
+            onError(Object.values(errors)[0]);
         }
         
         return isValid;
@@ -168,7 +154,6 @@ function PatientInformation({ onRegister, onError }) {
     const handleInputChange = (e, section, field) => {
         const { value } = e.target;
         
-        // Clear specific validation error when field is edited
         if (section) {
             const errorKey = `${section}.${field}`;
             if (validationErrors[errorKey]) {
@@ -201,7 +186,6 @@ function PatientInformation({ onRegister, onError }) {
             }));
         }
 
-        // Calculate BMI when height and weight are both present
         if (section === 'medicalInfo' && (field === 'height' || field === 'weight')) {
             const height = field === 'height' ? parseFloat(value) : parseFloat(formData.medicalInfo.height);
             const weight = field === 'weight' ? parseFloat(value) : parseFloat(formData.medicalInfo.weight);
@@ -216,7 +200,6 @@ function PatientInformation({ onRegister, onError }) {
                     }
                 }));
                 
-                // Clear BMI validation error if it exists
                 if (validationErrors['medicalInfo.bmi']) {
                     setValidationErrors(prev => {
                         const updated = {...prev};
@@ -227,12 +210,11 @@ function PatientInformation({ onRegister, onError }) {
             }
         }
         
-        // Calculate age from birthdate
         if (section === 'personalInfo' && field === 'birthdate') {
             try {
                 const birthdate = new Date(value);
                 const today = new Date();
-                if (birthdate <= today) { // Only calculate if date is valid and not in future
+                if (birthdate <= today) {
                     const birthYear = birthdate.getFullYear();
                     const currentYear = today.getFullYear();
                     const calculatedAge = currentYear - birthYear;
@@ -245,7 +227,6 @@ function PatientInformation({ onRegister, onError }) {
                         }
                     }));
                     
-                    // Clear age validation error if it exists
                     if (validationErrors['personalInfo.age']) {
                         setValidationErrors(prev => {
                             const updated = {...prev};
@@ -262,7 +243,7 @@ function PatientInformation({ onRegister, onError }) {
 
     const handleSubmit = async () => {
         if (isSubmitting) {
-            return; // Prevent multiple submissions
+            return;
         }
         
         if (!validateForm()) {
@@ -272,7 +253,6 @@ function PatientInformation({ onRegister, onError }) {
         try {
             setIsSubmitting(true);
             
-            // Structure the patient data according to the expected format
             const patientData = {
                 personalInfo: {
                     firstName: formData.firstName.trim(),
@@ -313,7 +293,6 @@ function PatientInformation({ onRegister, onError }) {
 
             if (result.success) {
                 onRegister(result.patientId);
-                // Clear form
                 setFormData({
                     firstName: '',
                     lastName: '',
@@ -344,7 +323,6 @@ function PatientInformation({ onRegister, onError }) {
                     }
                 });
                 setValidationErrors({});
-                // Show success message and reload page
                 alert('Patient registered successfully!');
                 window.location.reload();
             } else {
@@ -358,13 +336,11 @@ function PatientInformation({ onRegister, onError }) {
         }
     };
 
-    // Helper function to determine if a field has an error
     const hasError = (section, field) => {
         const errorKey = section ? `${section}.${field}` : field;
         return validationErrors[errorKey] ? true : false;
     };
 
-    // Helper function to get error message for a field
     const getErrorMessage = (section, field) => {
         const errorKey = section ? `${section}.${field}` : field;
         return validationErrors[errorKey] || '';
@@ -516,7 +492,7 @@ function PatientInformation({ onRegister, onError }) {
                             onChange={(e) => handleInputChange(e, 'personalInfo', 'birthdate')}
                             required
                             style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
-                            max={new Date().toISOString().split('T')[0]} // Set max date to today
+                            max={new Date().toISOString().split('T')[0]}
                         />
                         {hasError('personalInfo', 'birthdate') && 
                             <div className="invalid-feedback">{getErrorMessage('personalInfo', 'birthdate')}</div>
@@ -736,17 +712,28 @@ function PatientInformation({ onRegister, onError }) {
                     color: #000000 !important;
                 }
 
-                /* Fix for number input spinners */
                 input[type="number"]::-webkit-inner-spin-button, 
                 input[type="number"]::-webkit-outer-spin-button {
-                    color: white !important;
-                    background-color: white !important;
                     opacity: 1 !important;
                 }
                 
-                /* Firefox */
                 input[type="number"] {
                     -moz-appearance: textfield;
+                }
+
+                /* Make calendar icon visible and black */
+                input[type="date"]::-webkit-calendar-picker-indicator {
+                    display: block !important;
+                    filter: invert(0%) !important; /* Black color */
+                    opacity: 1 !important;
+                    cursor: pointer;
+                }
+
+                /* Style for the sidebar (left-section) to make text black */
+                .left-section,
+                .left-section h4,
+                .left-section label {
+                    color: #000000 !important;
                 }
             `}</style>
         </div>

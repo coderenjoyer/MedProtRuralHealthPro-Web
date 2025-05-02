@@ -83,8 +83,25 @@ const DetailsSection = styled.div`
   overflow-y: auto;
   padding-right: 10px;
   min-width: 400px;
-  max-height: 70vh; /* Added to limit height and enable scrollbar */
+  max-height: 70vh;
   box-sizing: border-box;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #fff;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #fff;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #e0e0e0;
+  }
 `;
 
 const DetailItem = styled.div`
@@ -227,6 +244,23 @@ const MedicineTable = styled.table`
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   max-height: 200px;
   overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #fff;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #fff;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #e0e0e0;
+  }
 `;
 
 const TableHeader = styled.th`
