@@ -83,6 +83,7 @@ const DetailsSection = styled.div`
   overflow-y: auto;
   padding-right: 10px;
   min-width: 400px;
+  max-height: 70vh; /* Added to limit height and enable scrollbar */
   box-sizing: border-box;
 `;
 
@@ -224,6 +225,8 @@ const MedicineTable = styled.table`
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
 `;
 
 const TableHeader = styled.th`
@@ -244,6 +247,11 @@ const TableRow = styled.tr`
   &:hover {
     background-color: #f5f5f5;
   }
+`;
+
+const OutOfStock = styled.span`
+  color: red;
+  font-weight: bold;
 `;
 
 const MainContentPatient = ({ selectedPatient }) => {
@@ -267,14 +275,12 @@ const MainContentPatient = ({ selectedPatient }) => {
     return availableMedicines.filter(med => !allergyValues.includes(med.name));
   };
 
-  // Update planned medicines when allergies change
   useEffect(() => {
     const allergyValues = allergies.map(med => med.value);
     setPlannedMeds(prev => prev.filter(med => !allergyValues.includes(med.value)));
   }, [allergies]);
 
   useEffect(() => {
-    // Fetch available medicines from Firebase
     const medicinesRef = ref(database, "rhp/medicines");
     const unsubscribeMedicines = onValue(medicinesRef, (snapshot) => {
       const data = snapshot.val();
@@ -292,7 +298,6 @@ const MainContentPatient = ({ selectedPatient }) => {
 
   useEffect(() => {
     if (selectedPatient) {
-      // Load patient data when a patient is selected
       const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
       const unsubscribe = onValue(patientRef, (snapshot) => {
         const data = snapshot.val();
@@ -355,19 +360,14 @@ const MainContentPatient = ({ selectedPatient }) => {
     }
 
     try {
-      // Create updates object for all changes
       const updates = {};
-
-      // Update patient information
       updates[`rhp/patients/${selectedPatient.id}/medicalInfo`] = {
         allergies: allergies.map(med => med.value),
         existingConditions: formData.presentIllnesses.split(",").map(condition => condition.trim()),
         medications: plannedMeds.map(med => `${med.label} (${quantities[med.value] || 0})`)
       };
-      
       updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
 
-      // Update medicine quantities
       plannedMeds.forEach(med => {
         const medicine = availableMedicines.find(m => m.name === med.label);
         if (medicine) {
@@ -380,7 +380,6 @@ const MainContentPatient = ({ selectedPatient }) => {
         }
       });
 
-      // Apply all updates in one transaction
       await update(ref(database), updates);
       toast.success("Patient information updated successfully");
       handleClear();
@@ -523,7 +522,9 @@ const MainContentPatient = ({ selectedPatient }) => {
                   <TableRow key={medicine.id}>
                     <TableCell>{medicine.name}</TableCell>
                     <TableCell>{medicine.brand || "N/A"}</TableCell>
-                    <TableCell>{medicine.quantity || "N/A"}</TableCell>
+                    <TableCell>
+                      {medicine.quantity === 0 ? <OutOfStock>Out of Stock</OutOfStock> : medicine.quantity || "N/A"}
+                    </TableCell>
                     <TableCell>{medicine.expiryDate}</TableCell>
                   </TableRow>
                 ))}
