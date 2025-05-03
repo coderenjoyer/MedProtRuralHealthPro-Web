@@ -50,13 +50,6 @@ const PatientContainer = styled.div`
   box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.15);
 `;
 
-const animationSettings = {
-  initial: { opacity: 0, x: 30 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -30 },
-  transition: { duration: 0.5, ease: "easeInOut" },
-};
-
 const EmptyState = styled.div`
   display: flex;
   justify-content: center;
@@ -76,13 +69,22 @@ const Doctor = () => {
   const [selectedButton, setSelectedButton] = useState("patientdiagnosis");
   const [selectedPatient, setSelectedPatient] = useState(null);
 
+  const toggleSidebar = () => {
+    setIsOpen(prev => !prev);
+  };
+
   const handlePatientSelect = (patient) => {
     setSelectedPatient(patient);
   };
 
   return (
     <Wrapper>
-      <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} selectedButton={selectedButton} setSelectedButton={setSelectedButton} />
+      <Sidebar 
+        isOpen={isOpen} 
+        toggleSidebar={toggleSidebar} 
+        selectedButton={selectedButton} 
+        setSelectedButton={setSelectedButton} 
+      />
       <ContentContainer>
         <AnimatePresence mode="wait">
           {selectedButton === "patientdiagnosis" && (
@@ -121,18 +123,6 @@ const Doctor = () => {
               style={{ width: '100%', height: '100%' }}
             >
               <Appointments />
-            </motion.div>
-          )}
-
-          {selectedButton === "logout" && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              style={{ width: '100%', height: '100%' }}
-            >
-              <Logout />
             </motion.div>
           )}
         </AnimatePresence>
