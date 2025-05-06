@@ -49,6 +49,13 @@ const LeftSection = styled.div`
   padding-right: 10px;
   flex-shrink: 0;
   box-sizing: border-box;
+  max-height: calc(100vh - 200px);
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 `;
 
 const CommentsSection = styled.div`
@@ -84,6 +91,13 @@ const DetailsSection = styled.div`
   padding-right: 10px;
   min-width: 400px;
   box-sizing: border-box;
+  max-height: calc(100vh - 200px);
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 `;
 
 const DetailItem = styled.div`

@@ -29,15 +29,6 @@ function PatRegistry() {
             </div>
             <PatientInformation onRegister={handleRegister} onError={handleError} />
             <PatientSearch />
-            <div className="bottom-buttons">
-                <div className="left-buttons">
-                    <button className="delete-btn">Delete</button>
-                    <button className="update-btn">Update</button>
-                </div>
-                <div className="right-buttons">
-                    <button className="clear-btn">Clear</button>
-                </div>
-            </div>
         </div>
     );
 }

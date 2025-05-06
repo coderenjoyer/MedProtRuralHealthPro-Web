@@ -1,202 +1,155 @@
-"use client"
-import styled from "styled-components"
-import { motion } from "framer-motion"
-import { useNavigate } from "react-router-dom" 
-import { Stethoscope, Calendar, LogOut, User } from "lucide-react"
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+    UserPlus, 
+    Package, 
+    Calendar, 
+    LogOut, 
+    ChevronLeft,
+    ChevronRight
+} from 'lucide-react';
 
-const SidebarContainer = styled.aside`
-  width: 240px;
-  background: linear-gradient(180deg, #4FC3F7 0%, #29b6f6 100%);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  box-shadow: ${({ theme }) => theme.shadows.lg};
-  z-index: 10;
-  height: 100vh;
-  position: relative;
-`
+function Sidebar({ selectedMenu, setSelectedMenu, isCollapsed, setIsCollapsed }) {
+    const navigate = useNavigate();
+    const iconSize = isCollapsed ? 28 : 24;
 
-const Logo = styled.div`
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-`
+    return (
+        <div className={`sidebar-container ${isCollapsed ? 'collapsed' : ''}`}>
+            <button className="toggle-button" onClick={() => setIsCollapsed(!isCollapsed)}>
+                {isCollapsed ? <ChevronRight size={24} color="#000000" /> : <ChevronLeft size={24} color="#000000" />}
+            </button>
+            
+            <div className="logo-container">
+                {!isCollapsed && <div className="logo-text">Dental Specialist</div>}
+            </div>
 
-const LogoIcon = styled.div`
-  width: 80px;
-  height: 80px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: ${({ theme }) => theme.borderRadius.full};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-`
+            <div className="sidebar-menu">
+                <button 
+                    className={`sidebar-button ${selectedMenu === 'examination' ? 'selected' : ''}`}
+                    onClick={() => setSelectedMenu('examination')}
+                    title="Dental Examination"
+                >
+                    <UserPlus size={iconSize} color="#000000" />
+                    {!isCollapsed && <span>Dental Examination</span>}
+                </button>
+                <button 
+                    className={`sidebar-button ${selectedMenu === 'appointments' ? 'selected' : ''}`}
+                    onClick={() => setSelectedMenu('appointments')}
+                    title="Appointments"
+                >
+                    <Calendar size={iconSize} color="#000000" />
+                    {!isCollapsed && <span>Appointments</span>}
+                </button>
+            </div>
 
-const LogoText = styled.h1`
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-`
+            <div className="sidebar-footer">
+                <button 
+                    className="sidebar-button logout-button" 
+                    title="Logout"
+                    onClick={() => navigate('/')} 
+                >
+                    <LogOut size={iconSize} color="#000000" />
+                    {!isCollapsed && <span>Logout</span>}
+                </button>
+            </div>
 
-const NavItems = styled.nav`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 2rem 0;
-  overflow-y: auto;
-  
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    
-    &:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-  }
-`
+            <style jsx>{`
+                .sidebar-container {
+                    position: fixed;
+                    left: 0;
+                    top: 0;
+                    height: 100vh;
+                    width: 260px;
+                    background-color: white;
+                    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+                    transition: width 0.3s ease;
+                    z-index: 1000;
+                    display: flex;
+                    flex-direction: column;
+                }
 
-const NavItem = styled(motion.button)`
-  display: flex;
-  align-items: center;
-  padding: 1rem 2rem;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-  position: relative;
-  transition: all 0.2s ease;
+                .sidebar-container.collapsed {
+                    width: 70px;
+                }
 
-  &:hover {
-    background-color: rgba(79, 195, 247, 0.2);
-  }
+                .toggle-button {
+                    position: absolute;
+                    right: -12px;
+                    top: 20px;
+                    background: white;
+                    border: none;
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+                    z-index: 1001;
+                }
 
-  ${({ active, theme }) =>
-    active &&
-    `
-    background-color: rgba(79, 195, 247, 0.3);
-    font-weight: 600;
-    
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: 4px;
-      background-color: ${theme.colors.white};
-    }
-  `}
-`
+                .logo-container {
+                    padding: 2rem 1.5rem;
+                    border-bottom: 1px solid #e5e7eb;
+                }
 
-const IconWrapper = styled.span`
-  margin-right: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`
+                .logo-text {
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    color: #000000;
+                }
 
-const Footer = styled.div`
-  padding: 1rem 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(180deg, #4FC3F7 0%, #29b6f6 100%);
-  position: sticky;
-  bottom: 0;
-  width: 100%;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-`
+                .sidebar-menu {
+                    flex: 1;
+                    padding: 1rem 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
 
-const LogoutButton = styled(motion.button)`
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: rgba(79, 195, 247, 0.2);
-  border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  color: white;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+                .sidebar-button {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    padding: 0.75rem 1.5rem;
+                    background: none;
+                    border: none;
+                    width: 100%;
+                    cursor: pointer;
+                    transition: background-color 0.2s ease;
+                    color: #000000;
+                }
 
-  &:hover {
-    background-color: rgba(79, 195, 247, 0.3);
-  }
+                .sidebar-button:hover {
+                    background-color: #f3f4f6;
+                }
 
-  svg {
-    margin-right: 0.75rem;
-  }
-`
+                .sidebar-button.selected {
+                    background-color: #e5e7eb;
+                    font-weight: 600;
+                }
 
-const Sidebar = ({ setActiveView, activeView }) => {
-  const navigate = useNavigate()
+                .sidebar-button span {
+                    font-size: 1rem;
+                    white-space: nowrap;
+                }
 
-  return (
-    <SidebarContainer>
-      <Logo>
-        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.5, type: "spring" }}>
-          <LogoIcon>
-            <Stethoscope size={40} />
-          </LogoIcon>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          <LogoText>SPECIALIST</LogoText>
-        </motion.div>
-      </Logo>
+                .sidebar-footer {
+                    padding: 1rem 0;
+                    border-top: 1px solid #e5e7eb;
+                }
 
-      <NavItems>
-        <NavItem
-          active={activeView === "examination"}
-          onClick={() => setActiveView("examination")}
-          whileTap={{ scale: 0.95 }}
-        >
-          <IconWrapper>
-            <Stethoscope size={20} />
-          </IconWrapper>
-          Dental Examination
-        </NavItem>
+                .logout-button {
+                    color: #ef4444;
+                }
 
-        <NavItem
-          active={activeView === "appointments"}
-          onClick={() => setActiveView("appointments")}
-          whileTap={{ scale: 0.95 }}
-        >
-          <IconWrapper>
-            <Calendar size={20} />
-          </IconWrapper>
-          Appointments
-        </NavItem>
-      </NavItems>
-
-      <Footer>
-        <LogoutButton whileTap={{ scale: 0.95 }} onClick={() => navigate("/")}>
-          <IconWrapper>
-            <LogOut size={18} />
-          </IconWrapper>
-          Log Out
-        </LogoutButton>
-      </Footer>
-    </SidebarContainer>
-  )
+                .logout-button:hover {
+                    background-color: #fee2e2;
+                }
+            `}</style>
+        </div>
+    );
 }
 
-export default Sidebar
+export default Sidebar;

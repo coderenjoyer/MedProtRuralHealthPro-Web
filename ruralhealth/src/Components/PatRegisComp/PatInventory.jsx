@@ -369,7 +369,7 @@ function ManageInventory() {
                                 <td>{medicine.id}</td>
                                 <td>{medicine.name}</td>
                                 <td>{medicine.brand}</td>
-                                <td>{medicine.quantity}</td>
+                                <td>{medicine.quantity === 0 ? <span style={{ color: 'red', fontWeight: 'bold' }}>OUT OF STOCK</span> : medicine.quantity}</td>
                                 <td>{medicine.expiryDate}</td>
                                 <td>
                                     <Button onClick={() => handleEdit(medicine)} style={{ marginRight: '5px' }}>Edit</Button>

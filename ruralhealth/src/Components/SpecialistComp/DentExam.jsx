@@ -3,40 +3,40 @@
 import { useState, useEffect } from "react"
 import styled from "styled-components"
 import { motion } from "framer-motion"
-import { ref, onValue, push, update, get } from 'firebase/database';
+import { ref, onValue, push, update } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 
 const Container = styled(motion.div)`
-  flex: 1;
   display: flex;
   gap: 1rem;
   width: 100%;
   height: 100%;
   padding: 1rem;
   overflow: hidden;
-`
+  background-color: #f5f7fb;
+`;
 
 const PatientListSection = styled.div`
   flex: 0 0 40%;
-  background-color: ${({ theme }) => theme.colors.white};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
-  box-shadow: ${({ theme }) => theme.shadows.md};
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: calc(100vh - 2rem);
-`
+  height: calc(100vh - 4rem);
+`;
 
 const ExaminationSection = styled.div`
   flex: 0 0 60%;
-  background-color: ${({ theme }) => theme.colors.white};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
-  box-shadow: ${({ theme }) => theme.shadows.md};
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: calc(100vh - 2rem);
-`
+  height: calc(100vh - 4rem);
+`;
 
 const Header = styled.div`
   background: linear-gradient(90deg, #2196f3 0%, #1976d2 100%);
@@ -46,13 +46,13 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-`
+`;
 
 const Title = styled.h2`
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
-`
+`;
 
 const Form = styled.form`
   display: flex;
@@ -79,7 +79,7 @@ const Form = styled.form`
       background: #555;
     }
   }
-`
+`;
 
 const FormGroup = styled.div`
   display: flex;
@@ -87,22 +87,22 @@ const FormGroup = styled.div`
   gap: 0.5rem;
   background: #f8f9fa;
   padding: 1rem;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  border: 1px solid ${({ theme }) => theme.colors.grayLight};
-`
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+`;
 
 const Label = styled.label`
   font-size: 1rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.grayDark};
-`
+  color: #374151;
+`;
 
 const Input = styled.input`
   padding: 0.75rem;
-  border: 1px solid ${({ theme }) => theme.colors.grayLight};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
   font-size: 1rem;
-  color: ${({ theme }) => theme.colors.grayDark};
+  color: #374151;
   background: white;
   transition: all 0.2s ease;
 
@@ -116,14 +116,14 @@ const Input = styled.input`
     background: #f1f1f1;
     cursor: not-allowed;
   }
-`
+`;
 
 const TextArea = styled.textarea`
   padding: 0.75rem;
-  border: 1px solid ${({ theme }) => theme.colors.grayLight};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
   font-size: 1rem;
-  color: ${({ theme }) => theme.colors.grayDark};
+  color: #374151;
   min-height: 100px;
   resize: vertical;
   background: white;
@@ -134,12 +134,12 @@ const TextArea = styled.textarea`
     border-color: #2196f3;
     box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
   }
-`
+`;
 
 const Select = styled.select`
   padding: 0.75rem;
-  border: 1px solid ${({ theme }) => theme.colors.grayLight};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
   font-size: 1rem;
   background-color: white;
   cursor: pointer;
@@ -150,7 +150,7 @@ const Select = styled.select`
     border-color: #2196f3;
     box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
   }
-`
+`;
 
 const ButtonContainer = styled.div`
   display: flex;
@@ -159,30 +159,30 @@ const ButtonContainer = styled.div`
   margin-top: 1rem;
   padding: 1rem;
   background: white;
-  border-top: 1px solid ${({ theme }) => theme.colors.grayLight};
+  border-top: 1px solid #e5e7eb;
   position: sticky;
   bottom: 0;
-`
+`;
 
 const Button = styled(motion.button)`
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: 0.375rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 1rem;
   min-width: 120px;
-`
+`;
 
 const ClearButton = styled(Button)`
-  background-color: ${({ theme }) => theme.colors.grayLight};
-  color: ${({ theme }) => theme.colors.grayDark};
+  background-color: #e5e7eb;
+  color: #374151;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.gray};
+    background-color: #6b7280;
   }
-`
+`;
 
 const SubmitButton = styled(Button)`
   background-color: #2196f3;
@@ -191,14 +191,14 @@ const SubmitButton = styled(Button)`
   &:hover {
     background-color: #1976d2;
   }
-`
+`;
 
 const PatientListContainer = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-`
+`;
 
 const PatientListHeader = styled.div`
   background: linear-gradient(90deg, #2196f3 0%, #1976d2 100%);
@@ -208,13 +208,13 @@ const PatientListHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-`
+`;
 
 const PatientListTitle = styled.h2`
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
-`
+`;
 
 const PatientTableContainer = styled.div`
   flex: 1;
@@ -238,13 +238,13 @@ const PatientTableContainer = styled.div`
       background: #555;
     }
   }
-`
+`;
 
 const PatientTable = styled.table`
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-`
+`;
 
 const TableHeader = styled.th`
   background-color: #f8f9fa;
@@ -254,27 +254,27 @@ const TableHeader = styled.th`
   color: #333;
   border-bottom: 2px solid #dee2e6;
   font-size: 1rem;
-`
+`;
 
 const TableCell = styled.td`
   padding: 1rem;
   border-bottom: 1px solid #dee2e6;
   color: #333;
   font-size: 1rem;
-`
+`;
 
 const TableRow = styled.tr`
   &:hover {
     background-color: #f8f9fa;
   }
-`
+`;
 
 const SelectButton = styled(motion.button)`
   padding: 0.5rem 1rem;
   background-color: #2196f3;
   color: white;
   border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: 0.375rem;
   cursor: pointer;
   font-weight: 500;
   font-size: 0.875rem;
@@ -288,12 +288,12 @@ const SelectButton = styled(motion.button)`
     background-color: #ccc;
     cursor: not-allowed;
   }
-`
+`;
 
 const SearchInput = styled.input`
   padding: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: 0.375rem;
   background: rgba(255, 255, 255, 0.1);
   color: white;
   width: 250px;
@@ -309,25 +309,25 @@ const SearchInput = styled.input`
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.3);
   }
-`
+`;
 
 const FeedbackMessage = styled(motion.div)`
   position: fixed;
   top: 20px;
   right: 20px;
   padding: 1rem;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: 0.375rem;
   color: white;
   font-weight: 500;
   z-index: 1000;
   background-color: ${({ type }) => type === 'success' ? '#4CAF50' : '#f44336'};
-  box-shadow: ${({ theme }) => theme.shadows.md};
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 `;
 
-const DentalExamination = ({ selectedPatient: propSelectedPatient }) => {
+const DentalExamination = () => {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState(propSelectedPatient);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const [feedback, setFeedback] = useState({ show: false, message: '', type: 'success' });
   const [formData, setFormData] = useState({
     lastName: "",
@@ -653,4 +653,4 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient }) => {
   )
 }
 
-export default DentalExamination
+export default DentalExamination;

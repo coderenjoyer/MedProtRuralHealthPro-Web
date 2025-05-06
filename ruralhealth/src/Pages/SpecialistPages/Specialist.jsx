@@ -1,66 +1,87 @@
 "use client"
 
-import { useState } from "react"
-import { ThemeProvider } from "styled-components"
-import { motion, AnimatePresence } from "framer-motion"
-import GlobalStyle from "../../styles/specappglobal.js"
-import theme from "../../styles/spec.theme.js"
-import Sidebar from "../../Components/SpecialistComp/Sidebar.jsx"
-import DentalExamination from "../../Components/SpecialistComp/DentExam.jsx"
-import Appo from "../../Components/PatRegisComp/PatAppo"
-import { AppContainer, MainContent } from "../../styles/specstyleapp.js"
+import React, { useState } from 'react';
+import styled, { ThemeProvider } from 'styled-components';
+import Sidebar from '../../Components/SpecialistComp/Sidebar';
+import Appo from '../../Components/PatRegisComp/PatAppo';
+import DentExam from '../../Components/SpecialistComp/DentExam';
 
-function Specialist() {
-  const [activeView, setActiveView] = useState("examination")
+const theme = {
+  colors: {
+    white: '#ffffff',
+    grayLight: '#e5e7eb',
+    grayDark: '#374151',
+    gray: '#6b7280'
+  },
+  borderRadius: {
+    md: '0.375rem',
+    lg: '0.5rem'
+  },
+  shadows: {
+    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+  }
+};
+
+const SpecialistContainer = styled.div`
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f7fb;
+`;
+
+const MainContent = styled.main`
+  flex: 1;
+  padding: 2rem 2rem 2rem 0;
+  background-color: #f5f7fb;
+  transition: margin-left 0.5s ease;
+  margin-left: ${props => props.$isCollapsed ? '70px' : '260px'};
+  height: 100vh;
+  overflow: hidden;
+`;
+
+const ExaminationView = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+
+  h1 {
+    color: #4FC3F7;
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+  }
+`;
+
+const Specialist = () => {
+  const [activeView, setActiveView] = useState('examination');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'appointments':
+        return <Appo />;
+      case 'examination':
+        return <DentExam />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <ThemeProvider theme={theme}>
-      <GlobalStyle />
-      <AppContainer>
-        <Sidebar setActiveView={setActiveView} activeView={activeView} />
-        <MainContent>
-          <AnimatePresence mode="wait">
-            {activeView === "examination" && (
-              <motion.div
-                key="examination"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  overflow: "auto",
-                  padding: "1rem",
-                  display: "flex",
-                  gap: "1rem",
-                }}
-              >
-                <DentalExamination />
-              </motion.div>
-            )}
-            {activeView === "appointments" && (
-              <motion.div
-                key="appointments"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                style={{ 
-                  height: "100%",
-                  overflow: "auto",
-                  padding: "1rem",
-                }}
-              >
-                <Appo />
-              </motion.div>
-            )}
-          </AnimatePresence>
+      <SpecialistContainer>
+        <Sidebar 
+          selectedMenu={activeView} 
+          setSelectedMenu={setActiveView}
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
+        />
+        <MainContent $isCollapsed={isCollapsed}>
+          {renderContent()}
         </MainContent>
-      </AppContainer>
+      </SpecialistContainer>
     </ThemeProvider>
-  )
-}
+  );
+};
 
-export default Specialist
+export default Specialist;
 

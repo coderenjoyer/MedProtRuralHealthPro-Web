@@ -21,6 +21,9 @@ const ContentContainer = styled.div`
   overflow: hidden;
   height: 100%;
   box-sizing: border-box;
+  margin-left: ${props => props.$isCollapsed ? '70px' : '260px'};
+  width: calc(100% - ${props => props.$isCollapsed ? '70px' : '260px'});
+  transition: all 0.5s ease;
 `;
 
 const PatientDiagnosisContainer = styled.div`
@@ -72,18 +75,26 @@ const EmptyStateText = styled.h2`
 `;
 
 const Doctor = () => {
-  const [isOpen, setIsOpen] = useState(true);
   const [selectedButton, setSelectedButton] = useState("patientdiagnosis");
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handlePatientSelect = (patient) => {
     setSelectedPatient(patient);
   };
 
+  const handleSidebarCollapse = (collapsed) => {
+    setIsCollapsed(collapsed);
+  };
+
   return (
     <Wrapper>
-      <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} selectedButton={selectedButton} setSelectedButton={setSelectedButton} />
-      <ContentContainer>
+      <Sidebar 
+        selectedButton={selectedButton} 
+        setSelectedButton={setSelectedButton} 
+        onCollapse={handleSidebarCollapse}
+      />
+      <ContentContainer $isCollapsed={isCollapsed}>
         <AnimatePresence mode="wait">
           {selectedButton === "patientdiagnosis" && (
             <motion.div
@@ -121,18 +132,6 @@ const Doctor = () => {
               style={{ width: '100%', height: '100%' }}
             >
               <Appointments />
-            </motion.div>
-          )}
-
-          {selectedButton === "logout" && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              style={{ width: '100%', height: '100%' }}
-            >
-              <Logout />
             </motion.div>
           )}
         </AnimatePresence>

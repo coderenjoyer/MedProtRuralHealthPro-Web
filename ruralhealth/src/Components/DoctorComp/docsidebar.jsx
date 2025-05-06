@@ -1,220 +1,168 @@
 import React, { useState } from "react";
-import styled from "styled-components";
-import { Calendar, Plus, LogOut, Camera, User } from "lucide-react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
+import { 
+    Plus, 
+    User, 
+    LogOut, 
+    ChevronLeft,
+    ChevronRight
+} from "lucide-react";
 
-const SidebarContainer = styled.div`
-  height: 100vh;
-  background-color: #b2ebf2;
-  color: black;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  width: ${(props) => (props.$isOpen ? "260px" : "70px")};
-  transition: width 0.5s ease;
-  overflow: hidden;
-`;
+function Sidebar({ selectedButton, setSelectedButton, onCollapse }) {
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const navigate = useNavigate();
+    const iconSize = isCollapsed ? 28 : 24;
 
-const ToggleButton = styled.button`
-  align-self: flex-end;
-  font-size: 2rem;
-  margin-bottom: 32px;
-  background: none;
-  border: none;
-  color: black;
-  cursor: pointer;
-  outline: none;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  padding: 14px;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+    const handleLogout = () => {
+        navigate("/");
+    };
 
-  &:hover {
-    background-color: #26c6da;
-    border-radius: 6px;
-    transform: scale(1.1);
-  }
+    const handleToggle = () => {
+        const newCollapsed = !isCollapsed;
+        setIsCollapsed(newCollapsed);
+        onCollapse(newCollapsed);
+    };
 
-  &:active {
-    background-color: #e0f7fa;
-    transform: scale(0.95);
-  }
+    return (
+        <div className={`sidebar-container ${isCollapsed ? 'collapsed' : ''}`}>
+            <button className="toggle-button" onClick={handleToggle}>
+                {isCollapsed ? <ChevronRight size={24} color="#000000" /> : <ChevronLeft size={24} color="#000000" />}
+            </button>
+            
+            <div className="logo-container">
+                {!isCollapsed && <div className="logo-text">Doctor</div>}
+            </div>
 
-  &::before,
-  &::after {
-    content: "";
-    display: block;
-    width: 30px;
-    height: 3px;
-    background-color: black;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-  }
+            <div className="sidebar-menu">
+                <button 
+                    className={`sidebar-button ${selectedButton === 'patientdiagnosis' ? 'selected' : ''}`}
+                    onClick={() => setSelectedButton('patientdiagnosis')}
+                    title="Patient Diagnosis"
+                >
+                    <Plus size={iconSize} color="#000000" />
+                    {!isCollapsed && <span>Patient Diagnosis</span>}
+                </button>
+                <button 
+                    className={`sidebar-button ${selectedButton === 'appointments' ? 'selected' : ''}`}
+                    onClick={() => setSelectedButton('appointments')}
+                    title="Appointments"
+                >
+                    <User size={iconSize} color="#000000" />
+                    {!isCollapsed && <span>Appointments</span>}
+                </button>
+            </div>
 
-  & > div {
-    width: 30px;
-    height: 3px;
-    background-color: black;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-  }
-`;
+            <div className="sidebar-footer">
+                <button 
+                    className="sidebar-button logout-button" 
+                    title="Logout"
+                    onClick={handleLogout}
+                >
+                    <LogOut size={iconSize} color="#000000" />
+                    {!isCollapsed && <span>Logout</span>}
+                </button>
+            </div>
 
-const LogoContainer = styled.label`
-  display: ${(props) => (props.$isOpen ? "flex" : "none")};
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 30px;
-  margin-top: 60px;
-  cursor: pointer;
-`;
+            <style jsx>{`
+                .sidebar-container {
+                    height: 100vh;
+                    background-color: #b2ebf2;
+                    color: black;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    padding: 20px;
+                    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+                    width: ${isCollapsed ? '70px' : '260px'};
+                    transition: width 0.5s ease;
+                    overflow: hidden;
+                    position: fixed;
+                    left: 0;
+                    top: 0;
+                }
 
-const UploadCircle = styled.div`
-  width: 190px;
-  height: 190px;
-  background-color: #f5f5f5;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 3px solid #4dd0e1;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  position: relative;
-  overflow: hidden;
-  padding: 10px;
-`;
+                .toggle-button {
+                    align-self: flex-end;
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 10px;
+                    margin-bottom: 20px;
+                    transition: background-color 0.3s ease;
+                    border-radius: 6px;
+                }
 
-const HiddenFileInput = styled.input`
-  display: none;
-`;
+                .toggle-button:hover {
+                    background-color: #26c6da;
+                }
 
-const DoctorText = styled.div`
-  margin-top: 15px;
-  font-weight: bold;
-  font-size: 1.7rem;
-  letter-spacing: 1px;
-`;
+                .logo-container {
+                    margin-bottom: 30px;
+                    margin-top: 20px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
 
-const Button = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 12px 18px;
-  background-color: #4dd0e1;
-  color: black;
-  border: 2px solid transparent;
-  border-radius: 10px;
-  cursor: pointer;
-  margin-bottom: 18px;
-  justify-content: ${(props) => (props.$isOpen ? "flex-start" : "center")};
-  transition: background-color 0.3s ease, border 0.3s ease;
-  outline: none;
-  font-size: 1rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+                .logo-text {
+                    font-weight: bold;
+                    font-size: 1.7rem;
+                    letter-spacing: 1px;
+                }
 
-  &:hover {
-    background-color: #26c6da;
-    border: 2px solid #26c6da;
-  }
+                .sidebar-menu {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 18px;
+                    width: 100%;
+                    margin-top: 60px;
+                }
 
-  &:active {
-    background-color: #e0f7fa;
-    border: 2px solid #e0f7fa !important;
-  }
+                .sidebar-button {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    width: 100%;
+                    padding: 12px 18px;
+                    background-color: #4dd0e1;
+                    color: black;
+                    border: 2px solid transparent;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    justify-content: ${isCollapsed ? 'center' : 'flex-start'};
+                    transition: background-color 0.3s ease, border 0.3s ease;
+                    outline: none;
+                    font-size: 1rem;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+                }
 
-  &.selected {
-    background-color: #e0f7fa;
-    border: 2px solid #4dd0e1 !important;
-  }
-`;
+                .sidebar-button:hover {
+                    background-color: #26c6da;
+                    border: 2px solid #26c6da;
+                }
 
-const Footer = styled.div`
-  margin-top: auto;
-  margin-bottom: 20px;
-  width: 100%;
-  display: flex;
-  justify-content: ${(props) => (props.$isOpen ? "flex-start" : "center")};
-`;
+                .sidebar-button.selected {
+                    background-color: #e0f7fa;
+                    border: 2px solid #4dd0e1 !important;
+                }
 
-const ButtonGroup = styled.div`
-  margin-top: 60px;
-`;
+                .sidebar-footer {
+                    margin-top: auto;
+                    margin-bottom: 20px;
+                    width: 100%;
+                }
 
-const Sidebar = ({ isOpen, toggleSidebar, selectedButton, setSelectedButton }) => {
-  const [image, setImage] = useState(null);
-  const navigate = useNavigate(); // Initialize navigate function
+                .logout-button {
+                    justify-content: ${isCollapsed ? 'center' : 'flex-start'};
+                }
 
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleLogout = () => {
-    
-    navigate("/");
-  };
-
-  return (
-    <div style={{ display: "flex" }}>
-      <SidebarContainer $isOpen={isOpen}>
-        <ToggleButton onClick={toggleSidebar}>
-          <div />
-        </ToggleButton>
-
-        <LogoContainer $isOpen={isOpen}>
-          <HiddenFileInput type="file" accept="image/*" onChange={handleImageUpload} />
-          <UploadCircle>
-            {image ? (
-              <img
-                src={image}
-                alt="Profile"
-                style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
-              />
-            ) : (
-              <Camera size={54} color="#555" />
-            )}
-          </UploadCircle>
-          <DoctorText>DOCTOR</DoctorText>
-        </LogoContainer>
-
-        <ButtonGroup>
-          <Button
-            $isOpen={isOpen}
-            className={selectedButton === "patientdiagnosis" ? "selected" : ""}
-            onClick={() => setSelectedButton("patientdiagnosis")}
-          >
-            <Plus />
-            {isOpen && <span>Patient Diagnosis</span>}
-          </Button>
-
-          <Button
-            $isOpen={isOpen}
-            className={selectedButton === "appointments" ? "selected" : ""}
-            onClick={() => setSelectedButton("appointments")}
-          >
-            <User />
-            {isOpen && <span>Appointments</span>}
-          </Button>
-        </ButtonGroup>
-
-        <Footer $isOpen={isOpen}>
-          <Button $isOpen={isOpen} onClick={handleLogout}> 
-            <LogOut />
-            {isOpen && <span>Log Out</span>}
-          </Button>
-        </Footer>
-      </SidebarContainer>
-    </div>
-  );
-};
+                .logo-text,
+                .sidebar-button span {
+                    color: #000000 !important;
+                }
+            `}</style>
+        </div>
+    );
+}
 
 export default Sidebar;
