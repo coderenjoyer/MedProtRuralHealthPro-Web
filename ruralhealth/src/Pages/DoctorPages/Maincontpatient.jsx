@@ -288,6 +288,11 @@ const OutOfStock = styled.span`
   font-weight: bold;
 `;
 
+const Expired = styled.span`
+  color: red;
+  font-weight: bold;
+`;
+
 const MainContentPatient = ({ selectedPatient }) => {
   const [allergies, setAllergies] = useState([]);
   const [plannedMeds, setPlannedMeds] = useState([]);
@@ -421,6 +426,13 @@ const MainContentPatient = ({ selectedPatient }) => {
       console.error("Error updating patient:", error);
       toast.error(error.message || "Failed to update patient information");
     }
+  };
+
+  const isExpired = (expiryDate) => {
+    if (!expiryDate) return false;
+    const today = new Date("2025-05-08"); // Current date as of May 08, 2025
+    const expDate = new Date(expiryDate);
+    return expDate < today;
   };
 
   return (
@@ -559,7 +571,9 @@ const MainContentPatient = ({ selectedPatient }) => {
                     <TableCell>
                       {medicine.quantity === 0 ? <OutOfStock>Out of Stock</OutOfStock> : medicine.quantity || "N/A"}
                     </TableCell>
-                    <TableCell>{medicine.expiryDate}</TableCell>
+                    <TableCell>
+                      {isExpired(medicine.expiryDate) ? <Expired>Expired</Expired> : medicine.expiryDate}
+                    </TableCell>
                   </TableRow>
                 ))}
               </tbody>

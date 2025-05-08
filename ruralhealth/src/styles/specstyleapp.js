@@ -1,11 +1,11 @@
-import styled from "styled-components"
+import styled from "styled-components";
 
 export const AppContainer = styled.div`
   display: flex;
   min-height: 100vh;
   background-color: #f5f7fb;
   color: black;
-`
+`;
 
 export const MainContent = styled.main`
   flex: 1;
@@ -13,9 +13,9 @@ export const MainContent = styled.main`
   background-color: #f5f7fb;
   color: black;
   overflow-y: auto;
-  margin-left: 250px;
+  margin-left: ${props => (props.isCollapsed ? "80px" : "250px")};
   transition: margin-left 0.3s ease;
-`
+`;
 
 export const ExaminationView = styled.div`
   display: flex;
@@ -30,5 +30,4 @@ export const ExaminationView = styled.div`
     font-size: 24px;
     font-weight: 600;
   }
-`
-
+`;
