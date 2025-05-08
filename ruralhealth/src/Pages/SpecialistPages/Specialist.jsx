@@ -1,24 +1,30 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { ThemeProvider } from "styled-components"
-import { motion, AnimatePresence } from "framer-motion"
-import GlobalStyle from "../../styles/specappglobal.js"
-import theme from "../../styles/spec.theme.js"
-import Sidebar from "../../Components/SpecialistComp/Sidebar.jsx"
-import DentalExamination from "../../Components/SpecialistComp/DentExam.jsx"
-import Appo from "../../Components/PatRegisComp/PatAppo"
-import { AppContainer, MainContent } from "../../styles/specstyleapp.js"
+import { useState } from "react";
+import { ThemeProvider } from "styled-components";
+import { motion, AnimatePresence } from "framer-motion";
+import GlobalStyle from "../../styles/specappglobal.js";
+import theme from "../../styles/spec.theme.js";
+import Sidebar from "../../Components/SpecialistComp/Sidebar.jsx";
+import DentalExamination from "../../Components/SpecialistComp/DentExam.jsx";
+import Appo from "../../Components/PatRegisComp/PatAppo";
+import { AppContainer, MainContent } from "../../styles/specstyleapp.js";
 
 function Specialist() {
-  const [activeView, setActiveView] = useState("examination")
+  const [activeView, setActiveView] = useState("examination");
+  const [isCollapsed, setIsCollapsed] = useState(false); // 🔼 shared collapse state
 
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyle />
       <AppContainer>
-        <Sidebar setActiveView={setActiveView} activeView={activeView} />
-        <MainContent>
+        <Sidebar
+          activeView={activeView}
+          setActiveView={setActiveView}
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
+        />
+        <MainContent isCollapsed={isCollapsed}>
           <AnimatePresence mode="wait">
             {activeView === "examination" && (
               <motion.div
@@ -36,7 +42,7 @@ function Specialist() {
                   gap: "1rem",
                 }}
               >
-                <DentalExamination />
+                <DentalExamination isCollapsed={isCollapsed} />
               </motion.div>
             )}
             {activeView === "appointments" && (
@@ -46,21 +52,20 @@ function Specialist() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
-                style={{ 
+                style={{
                   height: "100%",
                   overflow: "auto",
                   padding: "1rem",
                 }}
               >
-                <Appo />
+                <Appo isCollapsed={isCollapsed} />
               </motion.div>
             )}
           </AnimatePresence>
         </MainContent>
       </AppContainer>
     </ThemeProvider>
-  )
+  );
 }
 
-export default Specialist
-
+export default Specialist;
