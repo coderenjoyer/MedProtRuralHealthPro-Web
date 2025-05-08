@@ -420,17 +420,6 @@ function PatientSearch() {
                             marginBottom: '20px'
                         }}>
                             <h3 style={{ margin: 0 }}>Patient Details</h3>
-                            <button 
-                                onClick={() => setSelectedPatient(null)}
-                                style={{
-                                    backgroundColor: 'transparent',
-                                    border: 'none',
-                                    fontSize: '24px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                &times;
-                            </button>
                         </div>
                         <div style={{
                             display: 'grid',
