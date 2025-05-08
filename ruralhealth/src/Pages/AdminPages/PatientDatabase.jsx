@@ -77,7 +77,7 @@ const Header = styled.header`
 
 const Title = styled.h1`
   font-size: 28px;
-  color: #4FC3F7;
+  color: #000000;
   margin: 0;
   text-align: center;
 
@@ -309,7 +309,8 @@ export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setAc
           id: key,
           ...value.personalInfo,
           ...value.medicalInfo,
-          ...value.contactInfo
+          ...value.contactInfo,
+          ...value.address,
         }));
         setPatients(patientsArray);
       } else {
@@ -428,7 +429,7 @@ export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setAc
               <ProfileRow>
                 <ProfileField>
                   <label>Date of Birth</label>
-                  <div className="value">{selectedPatient?.dateOfBirth || '—'}</div>
+                  <div className="value">{selectedPatient?.birthdate || '—'}</div>
                 </ProfileField>
                 <ProfileField>
                   <label>Gender</label>
@@ -439,59 +440,32 @@ export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setAc
                   <div className="value">{selectedPatient?.civilStatus || '—'}</div>
                 </ProfileField>
               </ProfileRow>
-
+              
               <ProfileRow>
                 <ProfileField>
-                  <label>Occupation</label>
-                  <div className="value">{selectedPatient?.occupation || '—'}</div>
+                  <label>Barangay</label>
+                  <div className="value">{selectedPatient?.barangay || '—'}</div>
                 </ProfileField>
                 <ProfileField>
-                  <label>Nationality</label>
-                  <div className="value">{selectedPatient?.nationality || '—'}</div>
+                  <label>Municipality</label>
+                  <div className="value">{selectedPatient?.municipality || '—'}</div>
                 </ProfileField>
                 <ProfileField>
-                  <label>Religion</label>
-                  <div className="value">{selectedPatient?.religion || '—'}</div>
+                  <label>Province</label>
+                  <div className="value">{selectedPatient?.province || '—'}</div>
+                </ProfileField>
+                <ProfileField>
+                  <label>Street</label>
+                  <div className="value">{selectedPatient?.street || '—'}</div>
+                </ProfileField>
+                <ProfileField>
+                  <label>Zipcode</label>
+                  <div className="value">{selectedPatient?.zipcode || '—'}</div>
                 </ProfileField>
               </ProfileRow>
-
-              <ProfileSection>
-                <ProfileField>
-                  <label>Contact Information</label>
-                  <div className="value">
-                    <div>Phone: {selectedPatient?.contactNumber || '—'}</div>
-                    <div>Email: {selectedPatient?.email || '—'}</div>
-                  </div>
-                </ProfileField>
-              </ProfileSection>
-
-              <ProfileSection>
-                <ProfileField>
-                  <label>Emergency Contact</label>
-                  <div className="value">
-                    <div>Name: {selectedPatient?.emergencyContact?.name || '—'}</div>
-                    <div>Relationship: {selectedPatient?.emergencyContact?.relationship || '—'}</div>
-                    <div>Contact: {selectedPatient?.emergencyContact?.contactNumber || '—'}</div>
-                  </div>
-                </ProfileField>
-              </ProfileSection>
-
-              <ProfileSection>
-                <ProfileField>
-                  <label>Complete Address</label>
-                  <div className="value">
-                    {selectedPatient?.address ? (
-                      <>
-                        <div>Street: {selectedPatient.address.street || '—'}</div>
-                        <div>Barangay: {selectedPatient.address.barangay || '—'}</div>
-                        <div>City: {selectedPatient.address.city || '—'}</div>
-                        <div>Province: {selectedPatient.address.province || '—'}</div>
-                        <div>Zip Code: {selectedPatient.address.zipCode || '—'}</div>
-                      </>
-                    ) : '—'}
-                  </div>
-                </ProfileField>
-              </ProfileSection>
+              
+              
+              
 
               <ProfileSection>
                 <ProfileField>

@@ -254,6 +254,11 @@ const TableCell = styled.td`
   color: #333;
 `;
 
+const OutOfStockText = styled.span`
+  color: #ff0000;
+  font-weight: bold;
+`;
+
 const TableRow = styled.tr`
   &:hover {
     background-color: #f5f5f5;
@@ -275,6 +280,7 @@ const MainContentPatient = ({ selectedPatient }) => {
     pastIllnesses: "",
     comments: ""
   });
+  const [previousData, setPreviousData] = useState(null);
 
   const getFilteredMedicines = () => {
     const allergyValues = allergies.map(med => med.value);
@@ -310,18 +316,46 @@ const MainContentPatient = ({ selectedPatient }) => {
       const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
       const unsubscribe = onValue(patientRef, (snapshot) => {
         const data = snapshot.val();
+        // Initialize doctorinteraction if it doesn't exist
+        if (data && !data.doctorinteraction) {
+          update(ref(database, `rhp/patients/${selectedPatient.id}`), {
+            doctorinteraction: {
+              medicalCare: "",
+              chiefComplaint: "",
+              diagnosis: "",
+              presentIllnesses: "",
+              pastIllnesses: "",
+              comments: "",
+              allergies: [],
+              plannedMeds: [],
+              plannedQuantities: {},
+            }
+          });
+        }
         if (data) {
+          const docInt = data.doctorinteraction || {};
+          setPreviousData({
+            medicalCare: docInt.medicalCare || "",
+            chiefComplaint: docInt.chiefComplaint || "",
+            diagnosis: docInt.diagnosis || "",
+            presentIllnesses: docInt.presentIllnesses || "",
+            pastIllnesses: docInt.pastIllnesses || "",
+            comments: docInt.comments || "",
+            allergies: docInt.allergies || [],
+            plannedMeds: docInt.plannedMeds || [],
+            plannedQuantities: docInt.plannedQuantities || {},
+          });
           setFormData(prev => ({
             ...prev,
             patientName: `${data.personalInfo.firstName} ${data.personalInfo.lastName}`,
-            medicalCare: data.medicalInfo?.medications?.join(", ") || "",
+            medicalCare: docInt.medicalCare || "",
             chiefComplaint: "",
             diagnosis: "",
-            presentIllnesses: data.medicalInfo?.existingConditions?.join(", ") || "",
+            presentIllnesses: docInt.presentIllnesses || "",
             pastIllnesses: "",
             comments: ""
           }));
-          setAllergies((data.medicalInfo?.allergies || []).map(med => ({ label: med, value: med })));
+          setAllergies((docInt.allergies || []).map(med => ({ label: med, value: med })));
         }
       });
 
@@ -372,11 +406,17 @@ const MainContentPatient = ({ selectedPatient }) => {
       // Create updates object for all changes
       const updates = {};
 
-      // Update patient information
-      updates[`rhp/patients/${selectedPatient.id}/medicalInfo`] = {
+      // Update doctorinteraction information
+      updates[`rhp/patients/${selectedPatient.id}/doctorinteraction`] = {
         allergies: allergies.map(med => med.value),
-        existingConditions: formData.presentIllnesses.split(",").map(condition => condition.trim()),
-        medications: plannedMeds.map(med => `${med.label} (${quantities[med.value] || 0})`)
+        plannedMeds: plannedMeds.map(med => med.label),
+        plannedQuantities: quantities,
+        medicalCare: formData.medicalCare,
+        chiefComplaint: formData.chiefComplaint,
+        diagnosis: formData.diagnosis,
+        presentIllnesses: formData.presentIllnesses,
+        pastIllnesses: formData.pastIllnesses,
+        comments: formData.comments,
       };
       
       updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
@@ -431,14 +471,21 @@ const MainContentPatient = ({ selectedPatient }) => {
           ].map((field) => (
             <DetailItem key={field.name}>
               <Label>{field.label.toUpperCase()}:</Label>
-              <InputField 
-                type="text" 
-                name={field.name}
-                value={formData[field.name]}
-                onChange={handleInputChange}
-                placeholder={`Enter ${field.label.toLowerCase()}...`}
-                disabled={field.name === "patientName"}
-              />
+              <div style={{ flex: 2 }}>
+                {previousData && previousData[field.name] && field.name !== "patientName" && (
+                  <div style={{ color: '#888', fontSize: '0.9em', marginBottom: 2 }}>
+                    <b>Previous:</b> {previousData[field.name]}
+                  </div>
+                )}
+                <InputField 
+                  type="text" 
+                  name={field.name}
+                  value={formData[field.name]}
+                  onChange={handleInputChange}
+                  placeholder={`Enter ${field.label.toLowerCase()}...`}
+                  disabled={field.name === "patientName"}
+                />
+              </div>
             </DetailItem>
           ))}
   
@@ -537,7 +584,13 @@ const MainContentPatient = ({ selectedPatient }) => {
                   <TableRow key={medicine.id}>
                     <TableCell>{medicine.name}</TableCell>
                     <TableCell>{medicine.brand || "N/A"}</TableCell>
-                    <TableCell>{medicine.quantity || "N/A"}</TableCell>
+                    <TableCell>
+                      {(!medicine.quantity || medicine.quantity === 0) ? (
+                        <OutOfStockText>OUT OF STOCK</OutOfStockText>
+                      ) : (
+                        medicine.quantity
+                      )}
+                    </TableCell>
                     <TableCell>{medicine.expiryDate}</TableCell>
                   </TableRow>
                 ))}

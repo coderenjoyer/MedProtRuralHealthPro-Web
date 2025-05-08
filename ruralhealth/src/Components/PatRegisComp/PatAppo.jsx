@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import { ChevronDown, ChevronUp, Search } from 'lucide-react';
-import { ref, onValue, push, update, remove } from 'firebase/database';
+import { ref, onValue, push, update, remove, get } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 import { toast } from 'react-toastify';
 import 'react-calendar/dist/Calendar.css';
@@ -157,6 +157,8 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         appointmentTime: '',
         description: ''
     });
+    const [showOverlay, setShowOverlay] = useState(false);
+    const [selectedAppointment, setSelectedAppointment] = useState(null);
 
     // Load all patients from Firebase
     useEffect(() => {
@@ -220,7 +222,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         const patient = localSelectedPatient || selectedPatient;
         if (patient) {
             const appointmentsRef = ref(database, `rhp/patients/${patient.id}/appointments`);
-            const unsubscribe = onValue(appointmentsRef, (snapshot) => {
+            const unsubscribe = onValue(appointmentsRef, async (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
                     const appointmentsList = Object.entries(data).map(([id, appointment]) => ({
@@ -234,6 +236,13 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                         return dateA - dateB;
                     });
                     setAppointments(sortedAppointments);
+                    
+                    // Schedule reminder emails for upcoming appointments
+                    const upcomingAppointments = sortedAppointments.filter(appointment => {
+                        const appointmentDate = new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`);
+                        return appointmentDate > new Date() && appointment.status !== 'cancelled';
+                    });
+                    await scheduleReminderEmails(upcomingAppointments);
                 } else {
                     setAppointments([]);
                 }
@@ -241,7 +250,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
 
             return () => unsubscribe();
         }
-    }, [localSelectedPatient, selectedPatient]);
+    }, [localSelectedPatient, selectedPatient, patients]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -252,7 +261,10 @@ function Appointments({ selectedPatient, onPatientSelect }) {
     };
 
     const handleSubmit = async () => {
-        if (!selectedPatient) {
+        const currentPatient = localSelectedPatient || selectedPatient;
+        console.log('Current patient in handleSubmit:', currentPatient);
+        
+        if (!currentPatient) {
             toast.error("Please select a patient first");
             return;
         }
@@ -263,12 +275,12 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         }
 
         try {
-            const appointmentsRef = ref(database, `rhp/patients/${selectedPatient.id}/appointments`);
+            const appointmentsRef = ref(database, `rhp/patients/${currentPatient.id}/appointments`);
             const newAppointmentRef = push(appointmentsRef);
             
             await update(newAppointmentRef, {
-                patientId: selectedPatient.id,
-                patientName: `${selectedPatient.personalInfo.firstName} ${selectedPatient.personalInfo.lastName}`,
+                patientId: currentPatient.id,
+                patientName: `${currentPatient.personalInfo.firstName} ${currentPatient.personalInfo.lastName}`,
                 appointmentDate: formData.appointmentDate,
                 appointmentTime: formData.appointmentTime,
                 description: formData.description,
@@ -277,7 +289,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
             });
 
             // Update patient's last visit
-            const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
+            const patientRef = ref(database, `rhp/patients/${currentPatient.id}`);
             await update(patientRef, {
                 'registrationInfo.lastVisit': new Date().toISOString()
             });
@@ -301,7 +313,9 @@ function Appointments({ selectedPatient, onPatientSelect }) {
 
     const handleCancelAppointment = async (appointmentId) => {
         try {
-            const appointmentRef = ref(database, `rhp/patients/${selectedPatient.id}/appointments/${appointmentId}`);
+            const patient = localSelectedPatient || selectedPatient;
+            if (!patient) throw new Error("No patient selected");
+            const appointmentRef = ref(database, `rhp/patients/${patient.id}/appointments/${appointmentId}`);
             await remove(appointmentRef);
             toast.success("Appointment cancelled successfully");
         } catch (error) {
@@ -346,6 +360,46 @@ function Appointments({ selectedPatient, onPatientSelect }) {
     // Format time for display
     const formatTime = (timeString) => {
         return timeString.substring(0, 5); // Remove seconds if present
+    };
+
+    const sendAppointmentReminder = async (appointment, patient) => {
+        try {
+            // Create a reminder record in Firebase
+            const reminderRef = ref(database, 'rhp/appointmentReminders');
+            await push(reminderRef, {
+                patientId: patient.id,
+                patientEmail: patient.contactInfo?.email,
+                patientName: `${patient.personalInfo?.firstName} ${patient.personalInfo?.lastName}`,
+                appointmentDate: appointment.appointmentDate,
+                appointmentTime: appointment.appointmentTime,
+                description: appointment.description || 'No specific description provided',
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            });
+
+            console.log('Reminder scheduled successfully');
+        } catch (error) {
+            console.error('Error scheduling reminder:', error);
+            toast.error('Failed to schedule reminder email');
+        }
+    };
+
+    // Function to schedule reminder emails
+    const scheduleReminderEmails = async (appointments) => {
+        for (const appointment of appointments) {
+            const appointmentDate = new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`);
+            const now = new Date();
+            const timeUntilAppointment = appointmentDate - now;
+            const oneDayInMs = 24 * 60 * 60 * 1000;
+
+            // If appointment is more than 1 day away, schedule the reminder
+            if (timeUntilAppointment > oneDayInMs) {
+                const patient = patients.find(p => p.id === appointment.patientId);
+                if (patient) {
+                    await sendAppointmentReminder(appointment, patient);
+                }
+            }
+        }
     };
 
     return (
@@ -552,8 +606,8 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                                     className="view-btn" 
                                                     style={{ color: '#000000' }}
                                                     onClick={() => {
-                                                        // Handle view appointment details
-                                                        console.log('View appointment:', appointment);
+                                                        setSelectedAppointment(appointment);
+                                                        setShowOverlay(true);
                                                     }}
                                                 >
                                                     View
@@ -581,6 +635,53 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                     </div>
                 </div>
             </div>
+
+            {/* Overlay for viewing appointment description */}
+            {showOverlay && selectedAppointment && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        background: '#fff',
+                        borderRadius: '12px',
+                        padding: '32px',
+                        minWidth: '320px',
+                        maxWidth: '90vw',
+                        boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+                        position: 'relative',
+                    }}>
+                        <h2 style={{marginTop: 0, color: '#000'}}>Appointment Description</h2>
+                        <p style={{color: '#333', fontSize: '1.1em'}}>{selectedAppointment.description || 'No description provided.'}</p>
+                        <button
+                            onClick={() => setShowOverlay(false)}
+                            style={{
+                                position: 'absolute',
+                                top: 12,
+                                right: 16,
+                                background: '#4dd0e1',
+                                color: '#000',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 16px',
+                                cursor: 'pointer',
+                                fontWeight: 'bold',
+                                fontSize: '1em',
+                            }}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
