@@ -515,7 +515,7 @@ function PatientInformation({ onRegister, onError }) {
                             value={formData.personalInfo.birthdate}
                             onChange={(e) => handleInputChange(e, 'personalInfo', 'birthdate')}
                             required
-                            style={{ backgroundColor: '#ffffff', color: '#000000', borderColor: '#ced4da' }}
+                            style={{ backgroundColor: '#ffffff#000000', color: '#000000', borderColor: '#ced4da' }}
                             max={new Date().toISOString().split('T')[0]} // Set max date to today
                         />
                         {hasError('personalInfo', 'birthdate') && 

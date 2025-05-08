@@ -11,13 +11,13 @@ import {
 
 function Sidebar({ selectedMenu, setSelectedMenu }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const navigate = useNavigate(); // Initialize navigate function
+    const navigate = useNavigate();
     const iconSize = isCollapsed ? 28 : 24;
 
     return (
         <div className={`sidebar-container ${isCollapsed ? 'collapsed' : ''}`}>
             <button className="toggle-button" onClick={() => setIsCollapsed(!isCollapsed)}>
-                {isCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
+                {isCollapsed ? <ChevronRight size={24} color="#000000" /> : <ChevronLeft size={24} color="#000000" />}
             </button>
             
             <div className="logo-container">
@@ -30,7 +30,7 @@ function Sidebar({ selectedMenu, setSelectedMenu }) {
                     onClick={() => setSelectedMenu('register')}
                     title="Register Patient"
                 >
-                    <UserPlus size={iconSize} />
+                    <UserPlus size={iconSize} color="#000000" />
                     {!isCollapsed && <span>Register Patient</span>}
                 </button>
                 <button 
@@ -38,7 +38,7 @@ function Sidebar({ selectedMenu, setSelectedMenu }) {
                     onClick={() => setSelectedMenu('inventory')}
                     title="Manage Inventory"
                 >
-                    <Package size={iconSize} />
+                    <Package size={iconSize} color="#000000" />
                     {!isCollapsed && <span>Manage Inventory</span>}
                 </button>
                 <button 
@@ -46,7 +46,7 @@ function Sidebar({ selectedMenu, setSelectedMenu }) {
                     onClick={() => setSelectedMenu('appointments')}
                     title="Appointments"
                 >
-                    <Calendar size={iconSize} />
+                    <Calendar size={iconSize} color="#000000" />
                     {!isCollapsed && <span>Appointments</span>}
                 </button>
             </div>
@@ -57,10 +57,17 @@ function Sidebar({ selectedMenu, setSelectedMenu }) {
                     title="Logout"
                     onClick={() => navigate('/')} 
                 >
-                    <LogOut size={iconSize} />
+                    <LogOut size={iconSize} color="#000000" />
                     {!isCollapsed && <span>Logout</span>}
                 </button>
             </div>
+
+            <style jsx>{`
+                .logo-text,
+                .sidebar-button span {
+                    color: #000000 !important; /* Set sidebar text to black */
+                }
+            `}</style>
         </div>
     );
 }
