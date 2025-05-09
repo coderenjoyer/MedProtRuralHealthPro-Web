@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import { ChevronDown, ChevronUp, Search } from 'lucide-react';
-import { ref, onValue, push, update, remove, get } from 'firebase/database';
+import { ref, onValue, push, update, remove, get, set } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 import { toast } from 'react-toastify';
 import 'react-calendar/dist/Calendar.css';
@@ -225,24 +225,18 @@ function Appointments({ selectedPatient, onPatientSelect }) {
             const unsubscribe = onValue(appointmentsRef, async (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    const appointmentsList = Object.entries(data).map(([id, appointment]) => ({
-                        id,
-                        ...appointment,
-                    }));
-                    // Sort appointments by date and time
-                    const sortedAppointments = appointmentsList.sort((a, b) => {
-                        const dateA = new Date(`${a.appointmentDate}T${a.appointmentTime}`);
-                        const dateB = new Date(`${b.appointmentDate}T${b.appointmentTime}`);
-                        return dateA - dateB;
-                    });
-                    setAppointments(sortedAppointments);
+                    // Since we're now storing a single appointment, convert it to array format
+                    const appointment = {
+                        id: 'current',
+                        ...data
+                    };
+                    setAppointments([appointment]);
                     
-                    // Schedule reminder emails for upcoming appointments
-                    const upcomingAppointments = sortedAppointments.filter(appointment => {
-                        const appointmentDate = new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`);
-                        return appointmentDate > new Date() && appointment.status !== 'cancelled';
-                    });
-                    await scheduleReminderEmails(upcomingAppointments);
+                    // Schedule reminder email for the appointment
+                    const appointmentDate = new Date(`${data.appointmentDate}T${data.appointmentTime}`);
+                    if (appointmentDate > new Date() && data.status !== 'cancelled') {
+                        await scheduleReminderEmails([appointment]);
+                    }
                 } else {
                     setAppointments([]);
                 }
@@ -276,9 +270,9 @@ function Appointments({ selectedPatient, onPatientSelect }) {
 
         try {
             const appointmentsRef = ref(database, `rhp/patients/${currentPatient.id}/appointments`);
-            const newAppointmentRef = push(appointmentsRef);
             
-            await update(newAppointmentRef, {
+            // Create new appointment data
+            const appointmentData = {
                 patientId: currentPatient.id,
                 patientName: `${currentPatient.personalInfo.firstName} ${currentPatient.personalInfo.lastName}`,
                 appointmentDate: formData.appointmentDate,
@@ -286,12 +280,16 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                 description: formData.description,
                 createdAt: new Date().toISOString(),
                 status: 'pending'
-            });
+            };
+
+            // Overwrite existing appointment or set to null if no appointment
+            await set(appointmentsRef, appointmentData);
 
             // Update patient's last visit
             const patientRef = ref(database, `rhp/patients/${currentPatient.id}`);
             await update(patientRef, {
-                'registrationInfo.lastVisit': new Date().toISOString()
+                'registrationInfo.lastVisit': new Date().toISOString(),
+                'registrationInfo.nextAppointment': `${formData.appointmentDate}T${formData.appointmentTime}`
             });
 
             toast.success("Appointment scheduled successfully");
@@ -311,12 +309,21 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         }));
     };
 
-    const handleCancelAppointment = async (appointmentId) => {
+    const handleCancelAppointment = async () => {
         try {
             const patient = localSelectedPatient || selectedPatient;
             if (!patient) throw new Error("No patient selected");
-            const appointmentRef = ref(database, `rhp/patients/${patient.id}/appointments/${appointmentId}`);
-            await remove(appointmentRef);
+            
+            // Set appointments to null when cancelled
+            const appointmentRef = ref(database, `rhp/patients/${patient.id}/appointments`);
+            await set(appointmentRef, null);
+            
+            // Update patient's next appointment to null
+            const patientRef = ref(database, `rhp/patients/${patient.id}`);
+            await update(patientRef, {
+                'registrationInfo.nextAppointment': null
+            });
+            
             toast.success("Appointment cancelled successfully");
         } catch (error) {
             console.error("Error cancelling appointment:", error);
@@ -614,7 +621,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                                 </button>
                                                 <button 
                                                     className="cancel-btn"
-                                                    onClick={() => handleCancelAppointment(appointment.id)}
+                                                    onClick={handleCancelAppointment}
                                                     style={{ color: '#000000' }}
                                                 >
                                                     Cancel
