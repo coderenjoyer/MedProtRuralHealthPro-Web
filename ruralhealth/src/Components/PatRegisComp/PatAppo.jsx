@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
-import { ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, HelpCircle, Info } from 'lucide-react';
 import { ref, onValue, push, update, remove, get, set } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 import { toast } from 'react-toastify';
@@ -8,6 +8,49 @@ import 'react-calendar/dist/Calendar.css';
 import styled from 'styled-components';
 import emailjs from '@emailjs/browser';
 import { EMAIL_CONFIG } from '../../config/emailConfig';
+
+// Tooltip styled components
+const TooltipContainer = styled.div`
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    max-width: 300px;
+    z-index: 1100;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    pointer-events: none;
+    opacity: ${({ isVisible }) => (isVisible ? 1 : 0)};
+    visibility: ${({ isVisible }) => (isVisible ? 'visible' : 'hidden')};
+`;
+
+const HelpButton = styled.button`
+    background: none;
+    border: none;
+    cursor: help;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 10px;
+    color: #4FC3F7;
+    
+    &:hover {
+        color: #29B6F6;
+    }
+`;
+
+const SectionHeader = styled.div`
+    display: flex;
+    align-items: center;
+    position: relative;
+    
+    h2 {
+        margin-right: 10px;
+    }
+`;
 
 const SearchResultsContainer = styled.div`
     max-height: 300px;
@@ -161,6 +204,8 @@ function Appointments({ selectedPatient, onPatientSelect }) {
     });
     const [showOverlay, setShowOverlay] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
+    // Add state for tooltips
+    const [activeTooltip, setActiveTooltip] = useState(null);
 
     // Load all patients from Firebase
     useEffect(() => {
@@ -542,11 +587,39 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         }
     };
 
+    // Tooltip handlers
+    const showTooltip = (id) => {
+        setActiveTooltip(id);
+    };
+
+    const hideTooltip = () => {
+        setActiveTooltip(null);
+    };
+
     return (
         <div className="appointments-container">
             <div className="appointment-management">
                 <AppointmentManagementSection>
-                    <h2 className="section-title" style={{ color: '#000000' }}>Appointment Management</h2>
+                    <SectionHeader>
+                        <h2 className="section-title" style={{ color: '#000000' }}>Appointment Management</h2>
+                        <HelpButton
+                            onMouseEnter={() => showTooltip('appointment-management')}
+                            onMouseLeave={hideTooltip}
+                        >
+                            <HelpCircle size={18} />
+                        </HelpButton>
+                        {activeTooltip === 'appointment-management' && (
+                            <TooltipContainer 
+                                isVisible={true}
+                                style={{
+                                    top: '40px',
+                                    left: '10px',
+                                }}
+                            >
+                                This section allows you to schedule and manage patient appointments. First, select a patient from the search panel, then set the appointment details.
+                            </TooltipContainer>
+                        )}
+                    </SectionHeader>
                     
                     {currentPatient && currentPatient.id && (
                         <PatientInfoSection>
@@ -590,7 +663,27 @@ function Appointments({ selectedPatient, onPatientSelect }) {
 
                     <AppointmentFormRef id="appointment-form">
                         <div className="appointment-form">
-                            <h3 style={{ color: '#000000' }}>Schedule Appointment</h3>
+                            <SectionHeader>
+                                <h3 style={{ color: '#000000' }}>Schedule Appointment</h3>
+                                <HelpButton
+                                    onMouseEnter={() => showTooltip('schedule-appointment')}
+                                    onMouseLeave={hideTooltip}
+                                >
+                                    <HelpCircle size={16} />
+                                </HelpButton>
+                                {activeTooltip === 'schedule-appointment' && (
+                                    <TooltipContainer 
+                                        isVisible={true}
+                                        style={{
+                                            top: '30px',
+                                            left: '150px',
+                                        }}
+                                    >
+                                        Select a date and time for the patient's appointment. All fields are required. An email confirmation will be sent to the patient if an email address is provided.
+                                    </TooltipContainer>
+                                )}
+                            </SectionHeader>
+                            
                             {!currentPatient && (
                                 <div style={{ 
                                     textAlign: 'center', 
@@ -604,7 +697,27 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                             )}
                             <PatientInfoGrid>
                                 <PatientInfoItem>
-                                    <label>Appointment Date</label>
+                                    <label>
+                                        Appointment Date
+                                        <HelpButton
+                                            onMouseEnter={() => showTooltip('date-help')}
+                                            onMouseLeave={hideTooltip}
+                                            style={{ marginLeft: '5px' }}
+                                        >
+                                            <Info size={14} />
+                                        </HelpButton>
+                                        {activeTooltip === 'date-help' && (
+                                            <TooltipContainer 
+                                                isVisible={true}
+                                                style={{
+                                                    top: '30px',
+                                                    left: '100px',
+                                                }}
+                                            >
+                                                Select a future date for the appointment. Past dates are not available.
+                                            </TooltipContainer>
+                                        )}
+                                    </label>
                                     <input 
                                         type="date" 
                                         name="appointmentDate"
@@ -616,7 +729,27 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                     />
                                 </PatientInfoItem>
                                 <PatientInfoItem>
-                                    <label>Appointment Time</label>
+                                    <label>
+                                        Appointment Time
+                                        <HelpButton
+                                            onMouseEnter={() => showTooltip('time-help')}
+                                            onMouseLeave={hideTooltip}
+                                            style={{ marginLeft: '5px' }}
+                                        >
+                                            <Info size={14} />
+                                        </HelpButton>
+                                        {activeTooltip === 'time-help' && (
+                                            <TooltipContainer 
+                                                isVisible={true}
+                                                style={{
+                                                    top: '30px',
+                                                    left: '100px',
+                                                }}
+                                            >
+                                                Select the time for the appointment. Clinic hours are 8:00 AM to 5:00 PM.
+                                            </TooltipContainer>
+                                        )}
+                                    </label>
                                     <input 
                                         type="time" 
                                         name="appointmentTime"
@@ -626,7 +759,27 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                     />
                                 </PatientInfoItem>
                                 <PatientInfoItem style={{ gridColumn: '1 / -1' }}>
-                                    <label>Appointment Description</label>
+                                    <label>
+                                        Appointment Description
+                                        <HelpButton
+                                            onMouseEnter={() => showTooltip('description-help')}
+                                            onMouseLeave={hideTooltip}
+                                            style={{ marginLeft: '5px' }}
+                                        >
+                                            <Info size={14} />
+                                        </HelpButton>
+                                        {activeTooltip === 'description-help' && (
+                                            <TooltipContainer 
+                                                isVisible={true}
+                                                style={{
+                                                    top: '30px',
+                                                    left: '100px',
+                                                }}
+                                            >
+                                                Enter the reason for the appointment, including any specific symptoms or concerns. This will help the doctor prepare for the consultation.
+                                            </TooltipContainer>
+                                        )}
+                                    </label>
                                     <textarea 
                                         name="description"
                                         value={formData.description}
@@ -644,9 +797,22 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                     onClick={handleClear}
                                     disabled={!currentPatient}
                                     style={{ color: '#000000' }}
+                                    onMouseEnter={() => showTooltip('clear-btn')}
+                                    onMouseLeave={hideTooltip}
                                 >
                                     Clear
                                 </button>
+                                {activeTooltip === 'clear-btn' && (
+                                    <TooltipContainer 
+                                        isVisible={true}
+                                        style={{
+                                            bottom: '-40px',
+                                            left: '0px',
+                                        }}
+                                    >
+                                        Clear all appointment form fields
+                                    </TooltipContainer>
+                                )}
                                 <button 
                                     className="btn confirm-btn" 
                                     onClick={() => {
@@ -676,9 +842,22 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                     }}
                                     disabled={!currentPatient}
                                     style={{ color: '#000000' }}
+                                    onMouseEnter={() => showTooltip('schedule-btn')}
+                                    onMouseLeave={hideTooltip}
                                 >
                                     Schedule Appointment
                                 </button>
+                                {activeTooltip === 'schedule-btn' && (
+                                    <TooltipContainer 
+                                        isVisible={true}
+                                        style={{
+                                            bottom: '-40px',
+                                            right: '0px',
+                                        }}
+                                    >
+                                        Save the appointment to the system and notify the patient via email if available
+                                    </TooltipContainer>
+                                )}
                             </div>
                         </div>
                     </AppointmentFormRef>
@@ -687,7 +866,26 @@ function Appointments({ selectedPatient, onPatientSelect }) {
 
             <div className="appointments-right-section">
                 <div className="search-patient-section">
-                    <h2 className="section-title" style={{ color: '#000000' }}>Search Patient</h2>
+                    <SectionHeader>
+                        <h2 className="section-title" style={{ color: '#000000' }}>Search Patient</h2>
+                        <HelpButton
+                            onMouseEnter={() => showTooltip('search-patient')}
+                            onMouseLeave={hideTooltip}
+                        >
+                            <HelpCircle size={18} />
+                        </HelpButton>
+                        {activeTooltip === 'search-patient' && (
+                            <TooltipContainer 
+                                isVisible={true}
+                                style={{
+                                    top: '40px',
+                                    left: '50px',
+                                }}
+                            >
+                                Search for patients by name or patient number. Click "Select" to choose a patient for appointment scheduling.
+                            </TooltipContainer>
+                        )}
+                    </SectionHeader>
                     <div className="search-box">
                         <input 
                             type="text" 
@@ -697,10 +895,26 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{ color: '#000000' }}
                         />
-                        <button className="search-button" style={{ color: '#000000' }}>
+                        <button 
+                            className="search-button" 
+                            style={{ color: '#000000' }}
+                            onMouseEnter={() => showTooltip('search-button')}
+                            onMouseLeave={hideTooltip}
+                        >
                             <Search size={20} color="#000000" />
                             Search
                         </button>
+                        {activeTooltip === 'search-button' && (
+                            <TooltipContainer 
+                                isVisible={true}
+                                style={{
+                                    top: '40px',
+                                    right: '20px',
+                                }}
+                            >
+                                Type a name or patient number to filter the list below
+                            </TooltipContainer>
+                        )}
                     </div>
                     <SearchResultsContainer>
                         <PatientsTable>
@@ -722,9 +936,22 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                             <SelectButton 
                                                 $isSelected={currentPatient?.id === patient.id}
                                                 onClick={() => handlePatientSelect(patient)}
+                                                onMouseEnter={() => showTooltip(`select-${patient.id}`)}
+                                                onMouseLeave={hideTooltip}
                                             >
                                                 {currentPatient?.id === patient.id ? 'Selected' : 'Select'}
                                             </SelectButton>
+                                            {activeTooltip === `select-${patient.id}` && (
+                                                <TooltipContainer 
+                                                    isVisible={true}
+                                                    style={{
+                                                        top: '0px',
+                                                        right: '-100px',
+                                                    }}
+                                                >
+                                                    {currentPatient?.id === patient.id ? 'This patient is currently selected' : 'Select this patient for scheduling'}
+                                                </TooltipContainer>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -734,7 +961,26 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                 </div>
 
                 <div className="upcoming-appointments-section">
-                    <h2 className="section-title" style={{ color: '#000000' }}>Upcoming Appointments</h2>
+                    <SectionHeader>
+                        <h2 className="section-title" style={{ color: '#000000' }}>Upcoming Appointments</h2>
+                        <HelpButton
+                            onMouseEnter={() => showTooltip('upcoming-appointments')}
+                            onMouseLeave={hideTooltip}
+                        >
+                            <HelpCircle size={18} />
+                        </HelpButton>
+                        {activeTooltip === 'upcoming-appointments' && (
+                            <TooltipContainer 
+                                isVisible={true}
+                                style={{
+                                    top: '40px',
+                                    left: '150px',
+                                }}
+                            >
+                                View all upcoming appointments for the selected patient. You can view details or cancel appointments from here.
+                            </TooltipContainer>
+                        )}
+                    </SectionHeader>
                     <div className="appointments-list">
                         <AppointmentsTable>
                             <thead>
@@ -773,16 +1019,42 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                                         setSelectedAppointment(appointment);
                                                         setShowOverlay(true);
                                                     }}
+                                                    onMouseEnter={() => showTooltip(`view-${appointment.id}`)}
+                                                    onMouseLeave={hideTooltip}
                                                 >
                                                     View
                                                 </button>
+                                                {activeTooltip === `view-${appointment.id}` && (
+                                                    <TooltipContainer 
+                                                        isVisible={true}
+                                                        style={{
+                                                            top: '0px',
+                                                            right: '-100px',
+                                                        }}
+                                                    >
+                                                        View full appointment details
+                                                    </TooltipContainer>
+                                                )}
                                                 <button 
                                                     className="cancel-btn"
                                                     onClick={handleCancelAppointment}
                                                     style={{ color: '#000000' }}
+                                                    onMouseEnter={() => showTooltip(`cancel-${appointment.id}`)}
+                                                    onMouseLeave={hideTooltip}
                                                 >
                                                     Cancel
                                                 </button>
+                                                {activeTooltip === `cancel-${appointment.id}` && (
+                                                    <TooltipContainer 
+                                                        isVisible={true}
+                                                        style={{
+                                                            top: '0px',
+                                                            right: '-170px',
+                                                        }}
+                                                    >
+                                                        Cancel this appointment and notify the patient
+                                                    </TooltipContainer>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

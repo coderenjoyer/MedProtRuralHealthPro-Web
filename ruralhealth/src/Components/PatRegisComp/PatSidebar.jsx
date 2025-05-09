@@ -9,12 +9,62 @@ import {
     ChevronRight,
     Edit2,
     Check,
-    X
+    X,
+    HelpCircle
 } from 'lucide-react';
 import styled from 'styled-components';
 import { ref, onValue, update, push } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 import { toast } from 'react-toastify';
+
+// Custom tooltip component
+const TooltipContainer = styled.div`
+    position: absolute;
+    background-color: #000000;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1100;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    left: ${({ isCollapsed }) => isCollapsed ? '70px' : '260px'};
+    transform: translateY(-50%);
+    
+    &:before {
+        content: "";
+        position: absolute;
+        left: -6px;
+        top: 50%;
+        transform: translateY(-50%);
+        border-width: 6px 6px 6px 0;
+        border-style: solid;
+        border-color: transparent #000000 transparent transparent;
+    }
+`;
+
+const TooltipTrigger = styled.div`
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+`;
+
+const HelpIconWrapper = styled.button`
+    background: none;
+    border: none;
+    cursor: help;
+    padding: 0;
+    margin-left: 8px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    
+    &:hover {
+        opacity: 1;
+    }
+`;
 
 const SidebarContainer = styled.div`
     height: 100vh;
@@ -175,6 +225,21 @@ const SidebarFooter = styled.div`
     width: 100%;
 `;
 
+// Tooltip component
+function Tooltip({ children, content, isVisible, isCollapsed }) {
+    return (
+        <TooltipTrigger>
+            {children}
+            <TooltipContainer 
+                style={{ opacity: isVisible ? 1 : 0 }}
+                isCollapsed={isCollapsed}
+            >
+                {content}
+            </TooltipContainer>
+        </TooltipTrigger>
+    );
+}
+
 function Sidebar({ selectedMenu, setSelectedMenu, onCollapse }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const navigate = useNavigate();
@@ -182,6 +247,7 @@ function Sidebar({ selectedMenu, setSelectedMenu, onCollapse }) {
     const [isEditing, setIsEditing] = useState(false);
     const [frontdeskName, setFrontdeskName] = useState('Front Desk');
     const [tempName, setTempName] = useState('');
+    const [activeTooltip, setActiveTooltip] = useState(null);
 
     useEffect(() => {
         // Load frontdesk name from database
@@ -261,11 +327,29 @@ function Sidebar({ selectedMenu, setSelectedMenu, onCollapse }) {
         onCollapse(newCollapsed);
     };
 
+    const showTooltip = (tooltipId) => {
+        setActiveTooltip(tooltipId);
+    };
+
+    const hideTooltip = () => {
+        setActiveTooltip(null);
+    };
+
     return (
         <SidebarContainer isCollapsed={isCollapsed}>
-            <ToggleButton onClick={handleToggle}>
-                {isCollapsed ? <ChevronRight size={24} color="#000000" /> : <ChevronLeft size={24} color="#000000" />}
-            </ToggleButton>
+            <Tooltip 
+                content="Toggle sidebar expansion" 
+                isVisible={activeTooltip === 'toggle'} 
+                isCollapsed={isCollapsed}
+            >
+                <ToggleButton 
+                    onClick={handleToggle}
+                    onMouseEnter={() => showTooltip('toggle')}
+                    onMouseLeave={hideTooltip}
+                >
+                    {isCollapsed ? <ChevronRight size={24} color="#000000" /> : <ChevronLeft size={24} color="#000000" />}
+                </ToggleButton>
+            </Tooltip>
             
             <LogoContainer>
                 {!isCollapsed && (
@@ -278,20 +362,50 @@ function Sidebar({ selectedMenu, setSelectedMenu, onCollapse }) {
                                     onKeyPress={(e) => e.key === 'Enter' && handleSave()}
                                 />
                                 <ActionButtons>
-                                    <ActionButton onClick={handleSave} title="Save">
-                                        <Check size={16} />
-                                    </ActionButton>
-                                    <ActionButton onClick={handleCancel} title="Cancel">
-                                        <X size={16} />
-                                    </ActionButton>
+                                    <Tooltip 
+                                        content="Save name changes" 
+                                        isVisible={activeTooltip === 'save'} 
+                                        isCollapsed={isCollapsed}
+                                    >
+                                        <ActionButton 
+                                            onClick={handleSave} 
+                                            onMouseEnter={() => showTooltip('save')}
+                                            onMouseLeave={hideTooltip}
+                                        >
+                                            <Check size={16} />
+                                        </ActionButton>
+                                    </Tooltip>
+                                    <Tooltip 
+                                        content="Cancel editing" 
+                                        isVisible={activeTooltip === 'cancel'} 
+                                        isCollapsed={isCollapsed}
+                                    >
+                                        <ActionButton 
+                                            onClick={handleCancel} 
+                                            onMouseEnter={() => showTooltip('cancel')}
+                                            onMouseLeave={hideTooltip}
+                                        >
+                                            <X size={16} />
+                                        </ActionButton>
+                                    </Tooltip>
                                 </ActionButtons>
                             </>
                         ) : (
                             <>
                                 {frontdeskName}
-                                <EditButton onClick={handleEditClick} title="Edit name">
-                                    <Edit2 size={16} />
-                                </EditButton>
+                                <Tooltip 
+                                    content="Edit your display name" 
+                                    isVisible={activeTooltip === 'edit'} 
+                                    isCollapsed={isCollapsed}
+                                >
+                                    <EditButton 
+                                        onClick={handleEditClick} 
+                                        onMouseEnter={() => showTooltip('edit')}
+                                        onMouseLeave={hideTooltip}
+                                    >
+                                        <Edit2 size={16} />
+                                    </EditButton>
+                                </Tooltip>
                             </>
                         )}
                     </LogoText>
@@ -299,44 +413,158 @@ function Sidebar({ selectedMenu, setSelectedMenu, onCollapse }) {
             </LogoContainer>
 
             <SidebarMenu>
-                <SidebarButton 
+                <Tooltip 
+                    content="Add new patients or update existing records" 
+                    isVisible={activeTooltip === 'register' && isCollapsed}
                     isCollapsed={isCollapsed}
-                    className={selectedMenu === 'register' ? 'selected' : ''}
-                    onClick={() => setSelectedMenu('register')}
-                    title="Register Patient"
                 >
-                    <UserPlus size={iconSize} color="#000000" />
-                    {!isCollapsed && <span>Register Patient</span>}
-                </SidebarButton>
-                <SidebarButton 
+                    <SidebarButton 
+                        isCollapsed={isCollapsed}
+                        className={selectedMenu === 'register' ? 'selected' : ''}
+                        onClick={() => setSelectedMenu('register')}
+                        onMouseEnter={() => showTooltip('register')}
+                        onMouseLeave={hideTooltip}
+                    >
+                        <UserPlus size={iconSize} color="#000000" />
+                        {!isCollapsed && (
+                            <>
+                                <span>Register Patient</span>
+                                {activeTooltip !== 'register-help' && (
+                                    <HelpIconWrapper
+                                        onMouseEnter={(e) => {
+                                            e.stopPropagation();
+                                            showTooltip('register-help');
+                                        }}
+                                        onMouseLeave={hideTooltip}
+                                    >
+                                        <HelpCircle size={16} />
+                                    </HelpIconWrapper>
+                                )}
+                            </>
+                        )}
+                    </SidebarButton>
+                </Tooltip>
+                {activeTooltip === 'register-help' && !isCollapsed && (
+                    <TooltipContainer 
+                        style={{ 
+                            opacity: 1, 
+                            top: '270px', 
+                            left: '100px', 
+                            maxWidth: '250px',
+                            whiteSpace: 'normal'
+                        }}
+                    >
+                        Register new patients with their personal and medical information. You can also search for and update existing patient records.
+                    </TooltipContainer>
+                )}
+
+                <Tooltip 
+                    content="Manage medicine stock and supplies" 
+                    isVisible={activeTooltip === 'inventory' && isCollapsed}
                     isCollapsed={isCollapsed}
-                    className={selectedMenu === 'inventory' ? 'selected' : ''}
-                    onClick={() => setSelectedMenu('inventory')}
-                    title="Manage Inventory"
                 >
-                    <Package size={iconSize} color="#000000" />
-                    {!isCollapsed && <span>Manage Inventory</span>}
-                </SidebarButton>
-                <SidebarButton 
+                    <SidebarButton 
+                        isCollapsed={isCollapsed}
+                        className={selectedMenu === 'inventory' ? 'selected' : ''}
+                        onClick={() => setSelectedMenu('inventory')}
+                        onMouseEnter={() => showTooltip('inventory')}
+                        onMouseLeave={hideTooltip}
+                    >
+                        <Package size={iconSize} color="#000000" />
+                        {!isCollapsed && (
+                            <>
+                                <span>Manage Inventory</span>
+                                {activeTooltip !== 'inventory-help' && (
+                                    <HelpIconWrapper
+                                        onMouseEnter={(e) => {
+                                            e.stopPropagation();
+                                            showTooltip('inventory-help');
+                                        }}
+                                        onMouseLeave={hideTooltip}
+                                    >
+                                        <HelpCircle size={16} />
+                                    </HelpIconWrapper>
+                                )}
+                            </>
+                        )}
+                    </SidebarButton>
+                </Tooltip>
+                {activeTooltip === 'inventory-help' && !isCollapsed && (
+                    <TooltipContainer 
+                        style={{ 
+                            opacity: 1, 
+                            top: '330px', 
+                            left: '100px', 
+                            maxWidth: '250px',
+                            whiteSpace: 'normal'
+                        }}
+                    >
+                        Track and manage medical supplies and medications. Monitor stock levels, expiration dates, and add/remove items from inventory.
+                    </TooltipContainer>
+                )}
+
+                <Tooltip 
+                    content="Schedule and manage patient appointments" 
+                    isVisible={activeTooltip === 'appointments' && isCollapsed}
                     isCollapsed={isCollapsed}
-                    className={selectedMenu === 'appointments' ? 'selected' : ''}
-                    onClick={() => setSelectedMenu('appointments')}
-                    title="Appointments"
                 >
-                    <Calendar size={iconSize} color="#000000" />
-                    {!isCollapsed && <span>Appointments</span>}
-                </SidebarButton>
+                    <SidebarButton 
+                        isCollapsed={isCollapsed}
+                        className={selectedMenu === 'appointments' ? 'selected' : ''}
+                        onClick={() => setSelectedMenu('appointments')}
+                        onMouseEnter={() => showTooltip('appointments')}
+                        onMouseLeave={hideTooltip}
+                    >
+                        <Calendar size={iconSize} color="#000000" />
+                        {!isCollapsed && (
+                            <>
+                                <span>Appointments</span>
+                                {activeTooltip !== 'appointments-help' && (
+                                    <HelpIconWrapper
+                                        onMouseEnter={(e) => {
+                                            e.stopPropagation();
+                                            showTooltip('appointments-help');
+                                        }}
+                                        onMouseLeave={hideTooltip}
+                                    >
+                                        <HelpCircle size={16} />
+                                    </HelpIconWrapper>
+                                )}
+                            </>
+                        )}
+                    </SidebarButton>
+                </Tooltip>
+                {activeTooltip === 'appointments-help' && !isCollapsed && (
+                    <TooltipContainer 
+                        style={{ 
+                            opacity: 1, 
+                            top: '390px', 
+                            left: '100px', 
+                            maxWidth: '250px',
+                            whiteSpace: 'normal'
+                        }}
+                    >
+                        Schedule patient appointments with doctors. View, modify, or cancel upcoming appointments and manage the clinic's calendar.
+                    </TooltipContainer>
+                )}
             </SidebarMenu>
 
             <SidebarFooter>
-                <SidebarButton 
+                <Tooltip 
+                    content="Log out of the system" 
+                    isVisible={activeTooltip === 'logout' && isCollapsed}
                     isCollapsed={isCollapsed}
-                    onClick={handleLogout}
-                    title="Logout"
                 >
-                    <LogOut size={iconSize} color="#000000" />
-                    {!isCollapsed && <span>Logout</span>}
-                </SidebarButton>
+                    <SidebarButton 
+                        isCollapsed={isCollapsed}
+                        onClick={handleLogout}
+                        onMouseEnter={() => showTooltip('logout')}
+                        onMouseLeave={hideTooltip}
+                    >
+                        <LogOut size={iconSize} color="#000000" />
+                        {!isCollapsed && <span>Logout</span>}
+                    </SidebarButton>
+                </Tooltip>
             </SidebarFooter>
         </SidebarContainer>
     );
