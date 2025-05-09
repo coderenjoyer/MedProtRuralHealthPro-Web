@@ -583,31 +583,41 @@ Is this information correct?`;
         // Create updates object
         const updates = {};
 
-        // Initialize or update patientVisits
-        if (!patientData.patientVisits) {
-            updates[`rhp/patients/${selectedPatient.id}/patientVisits`] = {
-                visits: [visitData]
-            };
+        // Update the latest dental examination
+        const dentalExaminationsRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
+        const dentalExaminationsSnapshot = await get(dentalExaminationsRef);
+        const dentalExaminations = dentalExaminationsSnapshot.val() || {};
+        
+        // Get the latest examination key
+        const latestExamKey = Object.keys(dentalExaminations).pop();
+        
+        if (latestExamKey) {
+            // Update the latest examination
+            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations/${latestExamKey}`] = examinationData;
         } else {
-            const visitsRef = ref(database, `rhp/patients/${selectedPatient.id}/patientVisits/visits`);
-            const newVisitRef = push(visitsRef);
-            const newVisitKey = newVisitRef.key;
-            updates[`rhp/patients/${selectedPatient.id}/patientVisits/visits/${newVisitKey}`] = visitData;
+            // If no previous examination exists, create a new one
+            const newExamRef = push(dentalExaminationsRef);
+            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations/${newExamRef.key}`] = examinationData;
         }
 
-        // Initialize or update dentalExaminations
-        if (!patientData.dentalExaminations) {
-            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations`] = {
-                [new Date().getTime()]: examinationData
-            };
+        // Update the latest visit
+        const patientVisitsRef = ref(database, `rhp/patients/${selectedPatient.id}/patientVisits/visits`);
+        const visitsSnapshot = await get(patientVisitsRef);
+        const visits = visitsSnapshot.val() || {};
+        
+        // Get the latest visit key
+        const latestVisitKey = Object.keys(visits).pop();
+        
+        if (latestVisitKey) {
+            // Update the latest visit
+            updates[`rhp/patients/${selectedPatient.id}/patientVisits/visits/${latestVisitKey}`] = visitData;
         } else {
-            const examinationRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
-            const newExaminationRef = push(examinationRef);
-            const newExamKey = newExaminationRef.key;
-            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations/${newExamKey}`] = examinationData;
+            // If no previous visit exists, create a new one
+            const newVisitRef = push(patientVisitsRef);
+            updates[`rhp/patients/${selectedPatient.id}/patientVisits/visits/${newVisitRef.key}`] = visitData;
         }
 
-        // Initialize or update dentalHistory
+        // Update dental history
         updates[`rhp/patients/${selectedPatient.id}/dentalHistory`] = {
             previousIssues: formData.previousIssues,
             presentIssues: formData.presentIssues,
@@ -615,25 +625,18 @@ Is this information correct?`;
             lastUpdated: new Date().toISOString()
         };
 
-        // Initialize or update registrationInfo
-        if (!patientData.registrationInfo) {
-            updates[`rhp/patients/${selectedPatient.id}/registrationInfo`] = {
-                lastVisit: new Date().toISOString(),
-                lastDentalVisit: new Date().toISOString()
-            };
-        } else {
-            updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
-            updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastDentalVisit`] = new Date().toISOString();
-        }
+        // Update registration info
+        updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
+        updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastDentalVisit`] = new Date().toISOString();
 
         // Apply all updates
         await update(ref(database), updates);
 
-        toast.success("Dental examination saved successfully");
+        toast.success("Dental examination updated successfully");
         handleClear();
     } catch (error) {
-        console.error("Error saving dental examination:", error);
-        toast.error(error.message || "Failed to save dental examination");
+        console.error("Error updating dental examination:", error);
+        toast.error(error.message || "Failed to update dental examination");
     }
   }
 
