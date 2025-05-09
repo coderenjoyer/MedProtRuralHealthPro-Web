@@ -25,7 +25,7 @@ const ContentWrapper = styled.div`
   padding: 2rem;
   height: calc(100vh - 4rem);
   display: grid;
-  grid-template-columns: 1.5fr 2.5fr; // Adjusted column widths to make cards wider
+  grid-template-columns: 1fr 2fr;
   gap: 1.5rem;
   background: #f5f7fa;
   overflow: hidden;
@@ -33,13 +33,10 @@ const ContentWrapper = styled.div`
   transition: margin-left 0.3s ease-in-out;
 
   @media (max-width: 1200px) {
-    grid-template-columns: 1fr; // Single column layout for smaller screens
+    grid-template-columns: 1fr;
     padding: 1rem;
     margin-left: 0;
   }
-
-  // Prevent shrinking when no content is present
-  min-width: 900px;
 `
 
 const PatientListSection = styled.div`
@@ -49,9 +46,7 @@ const PatientListSection = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-width: 300px; // Ensure the section doesn't shrink below this width
-  min-height: 400px; // Add a minimum height to prevent collapsing
-`;
+`
 
 const ExaminationSection = styled.div`
   background: white;
@@ -60,7 +55,6 @@ const ExaminationSection = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-width: 600px; // Ensure the section doesn't shrink below this width
 `
 
 const Header = styled.div`
@@ -245,7 +239,6 @@ const PatientTableContainer = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
-  min-height: 200px; // Add a minimum height to prevent collapsing
   
   &::-webkit-scrollbar {
     width: 6px;
@@ -264,7 +257,7 @@ const PatientTableContainer = styled.div`
       background: #9ca3af;
     }
   }
-`;
+`
 
 const PatientTable = styled.table`
   width: 100%;
@@ -407,81 +400,132 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
   };
 
   useEffect(() => {
-    const patientsRef = ref(database, 'rhp/patients');
-    const unsubscribe = onValue(patientsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const patientsList = Object.entries(data).map(([id, patient]) => ({
-          id,
-          ...patient
-        }));
-        setPatients(patientsList);
-      } else {
+    try {
+      const patientsRef = ref(database, 'rhp/patients');
+      const unsubscribe = onValue(patientsRef, (snapshot) => {
+        try {
+          const data = snapshot.val();
+          if (data) {
+            const patientsList = Object.entries(data).map(([id, patient]) => ({
+              id,
+              ...patient
+            }));
+            setPatients(patientsList);
+          } else {
+            setPatients([]);
+          }
+        } catch (error) {
+          console.error("Error processing patient data:", error);
+          toast.error("Failed to process patient data");
+          setPatients([]);
+        }
+      }, (error) => {
+        console.error("Error fetching patients:", error);
+        toast.error("Failed to fetch patients");
         setPatients([]);
-      }
-    });
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (error) {
+      console.error("Error setting up patients listener:", error);
+      toast.error("Failed to initialize patients list");
+      setPatients([]);
+    }
   }, []);
 
   useEffect(() => {
     if (selectedPatient) {
-      // Set personal information
-      setFormData(prev => ({
-        ...prev,
-        lastName: selectedPatient.personalInfo?.lastName || "",
-        firstName: selectedPatient.personalInfo?.firstName || "",
-        address: selectedPatient.personalInfo?.address || "",
-        email: selectedPatient.contactInfo?.email || "",
-        contactNumber: selectedPatient.contactInfo?.contactNumber || "",
-        // Clear current examination fields
-        presentIssues: "",
-        medications: "",
-        teethCondition: "Good",
-        gums: "Healthy",
-        treatment: ""
-      }));
+      try {
+        // Set personal information
+        setFormData(prev => ({
+          ...prev,
+          lastName: selectedPatient.personalInfo?.lastName || "",
+          firstName: selectedPatient.personalInfo?.firstName || "",
+          address: selectedPatient.personalInfo?.address || "",
+          email: selectedPatient.contactInfo?.email || "",
+          contactNumber: selectedPatient.contactInfo?.contactNumber || "",
+          // Clear current examination fields
+          presentIssues: "",
+          medications: "",
+          teethCondition: "Good",
+          gums: "Healthy",
+          treatment: ""
+        }));
 
-      // Load previous dental history
-      const dentalHistoryRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalHistory`);
-      onValue(dentalHistoryRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          setFormData(prev => ({
-            ...prev,
-            // Set previous issues from history
-            previousIssues: data.presentIssues || "",
-          }));
-        }
-      });
+        // Load previous dental history
+        const dentalHistoryRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalHistory`);
+        const unsubscribeHistory = onValue(dentalHistoryRef, (snapshot) => {
+          try {
+            const data = snapshot.val();
+            if (data) {
+              setFormData(prev => ({
+                ...prev,
+                previousIssues: data.presentIssues || "",
+              }));
+            }
+          } catch (error) {
+            console.error("Error loading dental history:", error);
+            toast.error("Failed to load dental history");
+          }
+        }, (error) => {
+          console.error("Error fetching dental history:", error);
+          toast.error("Failed to fetch dental history");
+        });
 
-      // Load last examination data
-      const examinationsRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
-      onValue(examinationsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          // Get the last examination
-          const lastExamination = Object.values(data).pop();
-          setPreviousData({
-            medications: lastExamination.medications || "",
-            teethCondition: lastExamination.teethCondition || "",
-            gums: lastExamination.gums || ""
-          });
-        }
-      });
+        // Load last examination data
+        const examinationsRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
+        const unsubscribeExam = onValue(examinationsRef, (snapshot) => {
+          try {
+            const data = snapshot.val();
+            if (data) {
+              // Get the last examination
+              const lastExamination = Object.values(data).pop();
+              setPreviousData({
+                medications: lastExamination.medications || "",
+                teethCondition: lastExamination.teethCondition || "",
+                gums: lastExamination.gums || ""
+              });
+            }
+          } catch (error) {
+            console.error("Error loading examination data:", error);
+            toast.error("Failed to load previous examination data");
+          }
+        }, (error) => {
+          console.error("Error fetching examination data:", error);
+          toast.error("Failed to fetch examination data");
+        });
+
+        // Clean up listeners
+        return () => {
+          unsubscribeHistory();
+          unsubscribeExam();
+        };
+      } catch (error) {
+        console.error("Error setting up patient data:", error);
+        toast.error("Failed to initialize patient data");
+      }
     }
   }, [selectedPatient]);
 
   const handlePatientSelect = (patient) => {
-    setSelectedPatient(patient);
-    setFormData(prev => ({
-      ...prev,
-      lastName: patient.personalInfo?.lastName || "",
-      firstName: patient.personalInfo?.firstName || "",
-      email: patient.contactInfo?.email || "",
-      contactNumber: patient.contactInfo?.contactNumber || "",
-    }));
-    showFeedback(`Selected patient: ${patient.personalInfo.firstName} ${patient.personalInfo.lastName}`);
+    try {
+      if (!patient || !patient.personalInfo) {
+        throw new Error("Invalid patient data");
+      }
+
+      setSelectedPatient(patient);
+      setFormData(prev => ({
+        ...prev,
+        lastName: patient.personalInfo?.lastName || "",
+        firstName: patient.personalInfo?.firstName || "",
+        email: patient.contactInfo?.email || "",
+        contactNumber: patient.contactInfo?.contactNumber || "",
+      }));
+      showFeedback(`Selected patient: ${patient.personalInfo.firstName} ${patient.personalInfo.lastName}`);
+    } catch (error) {
+      console.error("Error selecting patient:", error);
+      toast.error("Failed to select patient");
+    }
   };
 
   const filteredPatients = patients.filter(patient => {
@@ -493,60 +537,110 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
     );
   });
 
-   const handleClear = () => {
-    // Show confirmation dialog
-    const confirmClear = window.confirm("Are you sure you want to clear the editable fields? This action cannot be undone.");
-    if (!confirmClear) {
-      return; // Exit if the user cancels
+  const handleChange = (e) => {
+    try {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    } catch (error) {
+      console.error("Error updating form data:", error);
+      toast.error("Failed to update form field");
     }
-  
-    if (!selectedPatient) {
-      toast.error("No patient selected to clear the form");
-      return;
-    }
-  
-    // Reset only the editable fields
-    setFormData((prev) => ({
-      ...prev,
-      previousIssues: "",
-      presentIssues: "",
-      medications: "",
-      teethCondition: "Good",
-      gums: "Healthy",
-      treatment: "",
-    }));
-  
-    toast.success("Editable fields cleared successfully");
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleClear = () => {
+    try {
+      if (selectedPatient) {
+        // Clear all form fields including previous issues
+        setFormData({
+          lastName: selectedPatient.personalInfo?.lastName || "",
+          firstName: selectedPatient.personalInfo?.firstName || "",
+          address: selectedPatient.personalInfo?.address || "",
+          email: selectedPatient.contactInfo?.email || "",
+          contactNumber: selectedPatient.contactInfo?.contactNumber || "",
+          previousIssues: "", // Clear previous issues as well
+          presentIssues: "",
+          medications: "",
+          teethCondition: "Good",
+          gums: "Healthy",
+          treatment: "",
+        });
 
-  if (!selectedPatient) {
-    toast.error("Please select a patient first");
-    return;
-  }
+        // Show confirmation message with details of what was cleared
+        const clearedFields = [
+          "Previous Dental Issues",
+          "Current Issues",
+          "Current Medications",
+          "Teeth Condition",
+          "Gums Condition",
+          "Recommended Treatment"
+        ].join(", ");
 
-  // Show confirmation dialog
-  const confirmSubmit = window.confirm("Are you sure you want to submit this dental examination?");
-  if (!confirmSubmit) {
-    return; // Exit if the user cancels
-  }
+        toast.success(`Form cleared successfully. The following fields have been reset: ${clearedFields}`, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } else {
+        toast.warning("No patient selected to clear form");
+      }
+    } catch (error) {
+      console.error("Error clearing form:", error);
+      toast.error("Failed to clear form");
+    }
+  };
 
-  try {
-    // Create a new dental examination record
-    const examinationData = {
-      patientId: selectedPatient.id,
-      patientName: `${formData.firstName} ${formData.lastName}`,
-      examinationDate: new Date().toISOString(),
-      teethCondition: formData.teethCondition,
-      gums: formData.gums,
-      treatment: formData.treatment,
-      previousIssues: formData.previousIssues,
-      presentIssues: formData.presentIssues,
-      medications: formData.medications,
-      status: 'completed',
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    if (!selectedPatient) {
+        toast.error("Please select a patient first");
+        return;
+    }
+
+    // Create confirmation message
+    const confirmationMessage = `
+Please confirm the following information is correct:
+
+Patient Information:
+------------------
+Name: ${formData.firstName} ${formData.lastName}
+Email: ${formData.email}
+Contact: ${formData.contactNumber}
+
+Dental Examination:
+-----------------
+Previous Issues: ${formData.previousIssues || 'None'}
+Current Issues: ${formData.presentIssues || 'None'}
+Current Medications: ${formData.medications || 'None'}
+Teeth Condition: ${formData.teethCondition}
+Gums Condition: ${formData.gums}
+Recommended Treatment: ${formData.treatment || 'None'}
+
+Is this information correct?`;
+
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(confirmationMessage);
+    if (!isConfirmed) {
+        return;
+    }
+
+    try {
+        // Create a new dental examination record
+        const examinationData = {
+            patientId: selectedPatient.id,
+            patientName: `${formData.firstName} ${formData.lastName}`,
+            examinationDate: new Date().toISOString(),
+            teethCondition: formData.teethCondition,
+            gums: formData.gums,
+            treatment: formData.treatment,
+            previousIssues: formData.previousIssues,
+            presentIssues: formData.presentIssues,
+            medications: formData.medications,
+            status: 'completed'
+        };
 
         // Create visit record
         const visitData = {
@@ -625,7 +719,6 @@ const handleSubmit = async (e) => {
         toast.error(error.message || "Failed to save dental examination");
     }
   }
-};
 
   return (
     <>
@@ -667,33 +760,25 @@ const handleSubmit = async (e) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredPatients.length > 0 ? (
-                      filteredPatients.map((patient) => (
-                        <TableRow key={patient.id}>
-                          <TableCell>{patient.id || 'N/A'}</TableCell>
-                          <TableCell>
-                            {patient.personalInfo?.firstName} {patient.personalInfo?.lastName}
-                          </TableCell>
-                          <TableCell>{patient.contactInfo?.contactNumber || 'N/A'}</TableCell>
-                          <TableCell>
-                            <SelectButton
-                              onClick={() => handlePatientSelect(patient)}
-                              disabled={selectedPatient?.id === patient.id}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              {selectedPatient?.id === patient.id ? 'Selected' : 'Select'}
-                            </SelectButton>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan="4" style={{ textAlign: 'center', padding: '1rem', color: '#6b7280' }}>
-                          No patients found
+                    {filteredPatients.map((patient) => (
+                      <TableRow key={patient.id}>
+                        <TableCell>{patient.id || 'N/A'}</TableCell>
+                        <TableCell>
+                          {patient.personalInfo?.firstName} {patient.personalInfo?.lastName}
+                        </TableCell>
+                        <TableCell>{patient.contactInfo?.contactNumber || 'N/A'}</TableCell>
+                        <TableCell>
+                          <SelectButton
+                            onClick={() => handlePatientSelect(patient)}
+                            disabled={selectedPatient?.id === patient.id}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {selectedPatient?.id === patient.id ? 'Selected' : 'Select'}
+                          </SelectButton>
                         </TableCell>
                       </TableRow>
-                    )}
+                    ))}
                   </tbody>
                 </PatientTable>
               </PatientTableContainer>
