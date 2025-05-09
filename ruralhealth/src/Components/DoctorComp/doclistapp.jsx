@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { format } from "date-fns";
+import { Info, HelpCircle } from "lucide-react";
 
 const Container = styled.div`
   flex-grow: 1;
@@ -24,10 +25,16 @@ const Header = styled.h1`
   font-weight: bold;
 `;
 
-const SubHeader = styled.h2`
-  font-size: 1.4rem;
-  color: black;
+const SubHeader = styled.div`
+  display: flex;
+  align-items: center;
   margin-bottom: 10px;
+  
+  h2 {
+    font-size: 1.4rem;
+    color: black;
+    margin: 0;
+  }
 `;
 
 const Section = styled.div`
@@ -40,6 +47,7 @@ const Section = styled.div`
   gap: 15px;
   min-height: 250px;
   overflow: hidden;
+  position: relative;
 `;
 
 const SearchBar = styled.input`
@@ -109,6 +117,39 @@ const Tooltip = styled.div`
   }
 `;
 
+const HelpButton = styled.button`
+  background: none;
+  border: none;
+  cursor: help;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+  color: #4dd0e1;
+  
+  &:hover {
+    color: #26c6da;
+  }
+`;
+
+const FeatureTooltip = styled.div`
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 300px;
+  z-index: 1100;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  opacity: ${({ isVisible }) => (isVisible ? 1 : 0)};
+  visibility: ${({ isVisible }) => (isVisible ? 'visible' : 'hidden')};
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  white-space: normal;
+`;
+
 const NoResults = styled.div`
   text-align: center;
   color: gray;
@@ -120,6 +161,7 @@ const MClistappointment = () => {
   const [searchPatient, setSearchPatient] = useState("");
   const [searchAppointment, setSearchAppointment] = useState("");
   const [hoveredAppointment, setHoveredAppointment] = useState(null);
+  const [activeTooltip, setActiveTooltip] = useState(null);
 
   const registeredPatients = ["Howard", "Coward", "John Doe", "Jane Smith", "Emily Clark"];
 
@@ -150,22 +192,86 @@ const MClistappointment = () => {
 
   const handleMouseLeave = () => setHoveredAppointment(null);
 
+  // Helper functions for tooltips
+  const showTooltip = (id) => {
+    setActiveTooltip(id);
+  };
+
+  const hideTooltip = () => {
+    setActiveTooltip(null);
+  };
+
   return (
     <Container>
       <Header>APPOINTMENTS</Header>
 
       <Section>
-        <SubHeader>REGISTERED PATIENTS</SubHeader>
-        <SearchBar
-          type="text"
-          value={searchPatient}
-          onChange={(e) => setSearchPatient(e.target.value)}
-          placeholder="Search patients..."
-        />
+        <SubHeader>
+          <h2>REGISTERED PATIENTS</h2>
+          <HelpButton
+            onMouseEnter={() => showTooltip('patients-help')}
+            onMouseLeave={hideTooltip}
+          >
+            <HelpCircle size={18} />
+          </HelpButton>
+        </SubHeader>
+        
+        {activeTooltip === 'patients-help' && (
+          <FeatureTooltip 
+            isVisible={true}
+            style={{
+              top: '55px',
+              left: '200px',
+            }}
+          >
+            Browse through all registered patients in the system. Click on a patient to select them for diagnosis or to view their medical history.
+          </FeatureTooltip>
+        )}
+
+        <div style={{ position: 'relative' }}>
+          <SearchBar
+            type="text"
+            value={searchPatient}
+            onChange={(e) => setSearchPatient(e.target.value)}
+            placeholder="Search patients..."
+            onMouseEnter={() => showTooltip('patient-search')}
+            onMouseLeave={hideTooltip}
+          />
+          {activeTooltip === 'patient-search' && (
+            <FeatureTooltip 
+              isVisible={true}
+              style={{
+                top: '0px',
+                right: '10px',
+              }}
+            >
+              Search for patients by name to quickly find specific records.
+            </FeatureTooltip>
+          )}
+        </div>
+        
         <List>
           {filteredPatients.length > 0 ? (
             filteredPatients.map((patient, index) => (
-              <ListItem key={index}>{`${index + 1}.) ${patient}`}</ListItem>
+              <ListItem 
+                key={index}
+                onMouseEnter={() => showTooltip(`patient-${index}`)}
+                onMouseLeave={hideTooltip}
+              >
+                {`${index + 1}.) ${patient}`}
+                {activeTooltip === `patient-${index}` && (
+                  <FeatureTooltip 
+                    isVisible={true}
+                    style={{
+                      top: '50%',
+                      left: '100%',
+                      transform: 'translateY(-50%)',
+                    }}
+                  >
+                    Click to view {patient}'s medical history and create a new diagnosis.
+                  </FeatureTooltip>
+                )}
+              </ListItem>
             ))
           ) : (
             <NoResults>No patients found</NoResults>
@@ -174,13 +280,50 @@ const MClistappointment = () => {
       </Section>
 
       <Section>
-        <SubHeader>UPCOMING APPOINTMENTS</SubHeader>
-        <SearchBar
-          type="text"
-          value={searchAppointment}
-          onChange={(e) => setSearchAppointment(e.target.value)}
-          placeholder="Search appointments..."
-        />
+        <SubHeader>
+          <h2>UPCOMING APPOINTMENTS</h2>
+          <HelpButton
+            onMouseEnter={() => showTooltip('appointments-help')}
+            onMouseLeave={hideTooltip}
+          >
+            <HelpCircle size={18} />
+          </HelpButton>
+        </SubHeader>
+        
+        {activeTooltip === 'appointments-help' && (
+          <FeatureTooltip 
+            isVisible={true}
+            style={{
+              top: '55px',
+              left: '200px',
+            }}
+          >
+            View all your upcoming patient appointments. Hover over an appointment to see full details including date, time, and purpose of visit.
+          </FeatureTooltip>
+        )}
+        
+        <div style={{ position: 'relative' }}>
+          <SearchBar
+            type="text"
+            value={searchAppointment}
+            onChange={(e) => setSearchAppointment(e.target.value)}
+            placeholder="Search appointments..."
+            onMouseEnter={() => showTooltip('appointment-search')}
+            onMouseLeave={hideTooltip}
+          />
+          {activeTooltip === 'appointment-search' && (
+            <FeatureTooltip 
+              isVisible={true}
+              style={{
+                top: '0px',
+                right: '10px',
+              }}
+            >
+              Search for specific appointments by patient name.
+            </FeatureTooltip>
+          )}
+        </div>
+        
         <List>
           {filteredAppointments.length > 0 ? (
             filteredAppointments.map((appointment, index) => (

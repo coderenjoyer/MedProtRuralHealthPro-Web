@@ -1,10 +1,50 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import Select from "react-select";
-import { Camera } from "lucide-react";
+import { Camera, HelpCircle, Info } from "lucide-react";
 import { ref, onValue, update, get, push } from "firebase/database";
 import { database } from "../../Firebase/firebase";
 import { toast } from "react-toastify";
+
+// Tooltip styled components
+const TooltipContainer = styled.div`
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 300px;
+  z-index: 1100;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  opacity: ${({ isVisible }) => (isVisible ? 1 : 0)};
+  visibility: ${({ isVisible }) => (isVisible ? 'visible' : 'hidden')};
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  white-space: normal;
+`;
+
+const HelpButton = styled.button`
+  background: none;
+  border: none;
+  cursor: help;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+  color: #4dd0e1;
+  
+  &:hover {
+    color: #26c6da;
+  }
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  position: relative;
+`;
 
 const Container = styled.div`
   display: flex;
@@ -281,6 +321,7 @@ const MainContentPatient = ({ selectedPatient }) => {
     comments: ""
   });
   const [previousData, setPreviousData] = useState(null);
+  const [activeTooltip, setActiveTooltip] = useState(null);
 
   const getFilteredMedicines = () => {
     const allergyValues = allergies.map(med => med.value);
@@ -476,13 +517,64 @@ const MainContentPatient = ({ selectedPatient }) => {
     }
   };
 
+  // Helper functions for tooltips
+  const showTooltip = (id) => {
+    setActiveTooltip(id);
+  };
+
+  const hideTooltip = () => {
+    setActiveTooltip(null);
+  };
+
   return (
     <Container>
-      <Header>PATIENT INFORMATION</Header>
+      <SectionHeader>
+        <Header>PATIENT INFORMATION</Header>
+        <HelpButton
+          onMouseEnter={() => showTooltip('patient-info-help')}
+          onMouseLeave={hideTooltip}
+        >
+          <HelpCircle size={18} />
+        </HelpButton>
+      </SectionHeader>
+      
+      {activeTooltip === 'patient-info-help' && (
+        <TooltipContainer 
+          isVisible={true}
+          style={{
+            top: '60px',
+            left: '200px',
+          }}
+        >
+          This section allows you to review and document the selected patient's medical information, diagnoses, and prescribe medications.
+        </TooltipContainer>
+      )}
+      
       <ContentRow>
         <LeftSection>
           <CommentsSection>
-            <CommentsLabel>OTHER COMMENTS:</CommentsLabel>
+            <SectionHeader>
+              <CommentsLabel>OTHER COMMENTS:</CommentsLabel>
+              <HelpButton
+                onMouseEnter={() => showTooltip('comments-help')}
+                onMouseLeave={hideTooltip}
+              >
+                <Info size={16} />
+              </HelpButton>
+            </SectionHeader>
+            
+            {activeTooltip === 'comments-help' && (
+              <TooltipContainer 
+                isVisible={true}
+                style={{
+                  top: '30px',
+                  left: '130px',
+                }}
+              >
+                Use this area to document additional observations, treatment plans, or follow-up instructions that don't fit in other fields.
+              </TooltipContainer>
+            )}
+            
             <CommentsInput 
               name="comments"
               value={formData.comments}
@@ -494,15 +586,34 @@ const MainContentPatient = ({ selectedPatient }) => {
   
         <DetailsSection>
           {[
-            { name: "patientName", label: "Patient Name" },
-            { name: "medicalCare", label: "Medical Care" },
-            { name: "chiefComplaint", label: "Chief Complaint" },
-            { name: "diagnosis", label: "Diagnosis" },
-            { name: "presentIllnesses", label: "Present Illnesses" },
-            { name: "pastIllnesses", label: "Past Illnesses" }
+            { name: "patientName", label: "Patient Name", tooltip: "The patient's full name, automatically filled based on selection." },
+            { name: "medicalCare", label: "Medical Care", tooltip: "Enter the specific type of medical care provided during this visit." },
+            { name: "chiefComplaint", label: "Chief Complaint", tooltip: "Document the patient's primary reason for seeking medical assistance." },
+            { name: "diagnosis", label: "Diagnosis", tooltip: "Enter your medical diagnosis based on examination and symptoms." },
+            { name: "presentIllnesses", label: "Present Illnesses", tooltip: "List any current illnesses or conditions the patient is experiencing." },
+            { name: "pastIllnesses", label: "Past Illnesses", tooltip: "Document the patient's medical history and previous conditions." }
           ].map((field) => (
             <DetailItem key={field.name}>
-              <Label>{field.label.toUpperCase()}:</Label>
+              <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                <Label>{field.label.toUpperCase()}:</Label>
+                <HelpButton
+                  onMouseEnter={() => showTooltip(`${field.name}-help`)}
+                  onMouseLeave={hideTooltip}
+                >
+                  <Info size={14} />
+                </HelpButton>
+                {activeTooltip === `${field.name}-help` && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '0px',
+                      left: '180px',
+                    }}
+                  >
+                    {field.tooltip}
+                  </TooltipContainer>
+                )}
+              </div>
               <div style={{ flex: 2 }}>
                 {previousData && previousData[field.name] && field.name !== "patientName" && (
                   <div style={{ color: '#888', fontSize: '0.9em', marginBottom: 2 }}>
@@ -523,7 +634,28 @@ const MainContentPatient = ({ selectedPatient }) => {
   
           <FooterRow>
             <Section>
-              <FooterLabel>ALLERGIES / MEDICINES TO AVOID:</FooterLabel>
+              <SectionHeader>
+                <FooterLabel>ALLERGIES / MEDICINES TO AVOID:</FooterLabel>
+                <HelpButton
+                  onMouseEnter={() => showTooltip('allergies-help')}
+                  onMouseLeave={hideTooltip}
+                >
+                  <Info size={14} />
+                </HelpButton>
+              </SectionHeader>
+              
+              {activeTooltip === 'allergies-help' && (
+                <TooltipContainer 
+                  isVisible={true}
+                  style={{
+                    top: '30px',
+                    left: '100px',
+                  }}
+                >
+                  Select any medications the patient is allergic to. These will automatically be excluded from the planned medicines list.
+                </TooltipContainer>
+              )}
+              
               <Select 
                 options={availableMedicines.map(med => ({ label: med.name, value: med.name }))} 
                 isMulti 
@@ -552,7 +684,28 @@ const MainContentPatient = ({ selectedPatient }) => {
             </Section>
   
             <Section>
-              <FooterLabel>PLANNED MEDICINES:</FooterLabel>
+              <SectionHeader>
+                <FooterLabel>PLANNED MEDICINES:</FooterLabel>
+                <HelpButton
+                  onMouseEnter={() => showTooltip('planned-meds-help')}
+                  onMouseLeave={hideTooltip}
+                >
+                  <Info size={14} />
+                </HelpButton>
+              </SectionHeader>
+              
+              {activeTooltip === 'planned-meds-help' && (
+                <TooltipContainer 
+                  isVisible={true}
+                  style={{
+                    top: '30px',
+                    left: '100px',
+                  }}
+                >
+                  Select medications to prescribe to the patient. For each selected medication, specify the quantity to dispense. The system will automatically update inventory.
+                </TooltipContainer>
+              )}
+              
               <Select 
                 options={getFilteredMedicines().map(med => ({ label: med.name, value: med.name }))} 
                 isMulti 
@@ -586,8 +739,21 @@ const MainContentPatient = ({ selectedPatient }) => {
                       type="number" 
                       placeholder="Qty" 
                       value={quantities[med.value] || ""}
-                      onChange={(e) => handleQuantityChange(med.value, e.target.value)} 
+                      onChange={(e) => handleQuantityChange(med.value, e.target.value)}
+                      onMouseEnter={() => showTooltip(`quantity-${med.value}`)}
+                      onMouseLeave={hideTooltip}
                     />
+                    {activeTooltip === `quantity-${med.value}` && (
+                      <TooltipContainer 
+                        isVisible={true}
+                        style={{
+                          top: '0px',
+                          right: '100px',
+                        }}
+                      >
+                        Enter the quantity of {med.label} to prescribe to the patient.
+                      </TooltipContainer>
+                    )}
                     <InputField 
                       type="text" 
                       placeholder="Enter prescribed quantity..." 
@@ -601,7 +767,28 @@ const MainContentPatient = ({ selectedPatient }) => {
           </FooterRow>
 
           <Section>
-            <FooterLabel>AVAILABLE MEDICINES:</FooterLabel>
+            <SectionHeader>
+              <FooterLabel>AVAILABLE MEDICINES:</FooterLabel>
+              <HelpButton
+                onMouseEnter={() => showTooltip('available-meds-help')}
+                onMouseLeave={hideTooltip}
+              >
+                <Info size={14} />
+              </HelpButton>
+            </SectionHeader>
+            
+            {activeTooltip === 'available-meds-help' && (
+              <TooltipContainer 
+                isVisible={true}
+                style={{
+                  top: '30px',
+                  left: '100px',
+                }}
+              >
+                This table shows all medicines currently available in the inventory, including quantities and expiry dates. Medications with zero quantity will be marked as out of stock.
+              </TooltipContainer>
+            )}
+            
             <MedicineTable>
               <thead>
                 <tr>
@@ -632,7 +819,9 @@ const MainContentPatient = ({ selectedPatient }) => {
   
           <ButtonRow>
             <Button 
-              className={selectedButton === "clear" ? "selected" : ""} 
+              className={selectedButton === "clear" ? "selected" : ""}
+              onMouseEnter={() => showTooltip('clear-btn')}
+              onMouseLeave={hideTooltip}
               onClick={() => {
                 handleButtonClick("clear");
                 handleClear();
@@ -640,9 +829,22 @@ const MainContentPatient = ({ selectedPatient }) => {
             >
               CLEAR
             </Button>
+            {activeTooltip === 'clear-btn' && (
+              <TooltipContainer 
+                isVisible={true}
+                style={{
+                  bottom: '50px',
+                  left: '0px',
+                }}
+              >
+                Clear all fields and start over.
+              </TooltipContainer>
+            )}
   
             <Button 
-              className={selectedButton === "input" ? "selected" : ""} 
+              className={selectedButton === "input" ? "selected" : ""}
+              onMouseEnter={() => showTooltip('save-btn')}
+              onMouseLeave={hideTooltip}
               onClick={() => {
                 handleButtonClick("input");
                 handleSubmit();
@@ -650,6 +852,17 @@ const MainContentPatient = ({ selectedPatient }) => {
             >
               SAVE
             </Button>
+            {activeTooltip === 'save-btn' && (
+              <TooltipContainer 
+                isVisible={true}
+                style={{
+                  bottom: '50px',
+                  left: '100px',
+                }}
+              >
+                Save the patient's diagnosis, comments, and prescribed medications. This will update the patient's medical record and adjust medicine inventory automatically.
+              </TooltipContainer>
+            )}
           </ButtonRow>
         </DetailsSection>
       </ContentRow>
