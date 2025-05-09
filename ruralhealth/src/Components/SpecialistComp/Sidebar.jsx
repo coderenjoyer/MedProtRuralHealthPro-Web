@@ -1,155 +1,318 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    UserPlus, 
-    Package, 
-    Calendar, 
-    LogOut, 
-    ChevronLeft,
-    ChevronRight
+import {
+  UserPlus,
+  Calendar,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Edit2,
+  Check,
+  X
 } from 'lucide-react';
+import styled from "styled-components";
+import { ref, onValue, update, push } from 'firebase/database';
+import { database } from '../../Firebase/firebase';
+import { toast } from 'react-toastify';
 
-function Sidebar({ selectedMenu, setSelectedMenu, isCollapsed, setIsCollapsed }) {
-    const navigate = useNavigate();
-    const iconSize = isCollapsed ? 28 : 24;
+export const SidebarContainer = styled.div`
+  width: ${({ isCollapsed }) => (isCollapsed ? "56px" : "240px")};
+  transition: width 0.3s;
+  background: #4FC3F7;
+  min-height: 100vh;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+`;
 
-    return (
-        <div className={`sidebar-container ${isCollapsed ? 'collapsed' : ''}`}>
-            <button className="toggle-button" onClick={() => setIsCollapsed(!isCollapsed)}>
-                {isCollapsed ? <ChevronRight size={24} color="#000000" /> : <ChevronLeft size={24} color="#000000" />}
-            </button>
-            
-            <div className="logo-container">
-                {!isCollapsed && <div className="logo-text">Dental Specialist</div>}
-            </div>
+const ToggleButton = styled.button`
+  position: absolute;
+  right: -12px;
+  top: 20px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #4FC3F7;
+  border: 1px solid #81D4FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  color: white;
 
-            <div className="sidebar-menu">
-                <button 
-                    className={`sidebar-button ${selectedMenu === 'examination' ? 'selected' : ''}`}
-                    onClick={() => setSelectedMenu('examination')}
-                    title="Dental Examination"
-                >
-                    <UserPlus size={iconSize} color="#000000" />
-                    {!isCollapsed && <span>Dental Examination</span>}
-                </button>
-                <button 
-                    className={`sidebar-button ${selectedMenu === 'appointments' ? 'selected' : ''}`}
-                    onClick={() => setSelectedMenu('appointments')}
-                    title="Appointments"
-                >
-                    <Calendar size={iconSize} color="#000000" />
-                    {!isCollapsed && <span>Appointments</span>}
-                </button>
-            </div>
+  &:hover {
+    background: #29B6F6;
+    transform: translateX(2px);
+  }
 
-            <div className="sidebar-footer">
-                <button 
-                    className="sidebar-button logout-button" 
-                    title="Logout"
-                    onClick={() => navigate('/')} 
-                >
-                    <LogOut size={iconSize} color="#000000" />
-                    {!isCollapsed && <span>Logout</span>}
-                </button>
-            </div>
+  &:active {
+    transform: translateX(4px);
+  }
+`;
 
-            <style jsx>{`
-                .sidebar-container {
-                    position: fixed;
-                    left: 0;
-                    top: 0;
-                    height: 100vh;
-                    width: 260px;
-                    background-color: white;
-                    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-                    transition: width 0.3s ease;
-                    z-index: 1000;
-                    display: flex;
-                    flex-direction: column;
-                }
+const LogoContainer = styled.div`
+  padding: 1.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+`;
 
-                .sidebar-container.collapsed {
-                    width: 70px;
-                }
+const LogoText = styled.div`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
 
-                .toggle-button {
-                    position: absolute;
-                    right: -12px;
-                    top: 20px;
-                    background: white;
-                    border: none;
-                    border-radius: 50%;
-                    width: 24px;
-                    height: 24px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-                    z-index: 1001;
-                }
+const EditButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
 
-                .logo-container {
-                    padding: 2rem 1.5rem;
-                    border-bottom: 1px solid #e5e7eb;
-                }
+  &:hover {
+    opacity: 1;
+  }
+`;
 
-                .logo-text {
-                    font-size: 1.25rem;
-                    font-weight: 600;
-                    color: #000000;
-                }
+const NameInput = styled.input`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  width: 120px;
+  text-align: center;
 
-                .sidebar-menu {
-                    flex: 1;
-                    padding: 1rem 0;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.5rem;
-                }
+  &:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+`;
 
-                .sidebar-button {
-                    display: flex;
-                    align-items: center;
-                    gap: 1rem;
-                    padding: 0.75rem 1.5rem;
-                    background: none;
-                    border: none;
-                    width: 100%;
-                    cursor: pointer;
-                    transition: background-color 0.2s ease;
-                    color: #000000;
-                }
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+`;
 
-                .sidebar-button:hover {
-                    background-color: #f3f4f6;
-                }
+const ActionButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
 
-                .sidebar-button.selected {
-                    background-color: #e5e7eb;
-                    font-weight: 600;
-                }
+  &:hover {
+    opacity: 1;
+  }
+`;
 
-                .sidebar-button span {
-                    font-size: 1rem;
-                    white-space: nowrap;
-                }
+const SidebarMenu = styled.div`
+  flex: 1;
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
 
-                .sidebar-footer {
-                    padding: 1rem 0;
-                    border-top: 1px solid #e5e7eb;
-                }
+const SidebarButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  border: none;
+  background: ${({ isActive }) => isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent'};
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
 
-                .logout-button {
-                    color: #ef4444;
-                }
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
 
-                .logout-button:hover {
-                    background-color: #fee2e2;
-                }
-            `}</style>
-        </div>
-    );
+  span {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+`;
+
+const SidebarFooter = styled.div`
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+`;
+
+function Sidebar({ activeView, setActiveView, isCollapsed, setIsCollapsed }) {
+  const navigate = useNavigate();
+  const iconSize = isCollapsed ? 28 : 24;
+  const [isEditing, setIsEditing] = useState(false);
+  const [dentistName, setDentistName] = useState('Dentist');
+  const [tempName, setTempName] = useState('');
+
+  useEffect(() => {
+    // Load dentist name from database
+    const userRef = ref(database, 'rhp/users');
+    onValue(userRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Find the current user's data
+        const currentUser = Object.values(data).find(user => user.role === 'dentist');
+        if (currentUser) {
+          setDentistName(currentUser.personName || 'Dentist');
+        }
+      }
+    });
+  }, []);
+
+  const handleEditClick = () => {
+    setTempName(dentistName);
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      const userRef = ref(database, 'rhp/users');
+      onValue(userRef, async (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          // Find the current user's key
+          const userKey = Object.keys(data).find(key => data[key].role === 'dentist');
+          if (userKey) {
+            // Update existing user
+            await update(ref(database, `rhp/users/${userKey}`), {
+              personName: tempName
+            });
+          } else {
+            // Create new user if not found
+            const newUserRef = push(userRef);
+            await update(newUserRef, {
+              role: 'dentist',
+              personName: tempName,
+              createdAt: new Date().toISOString()
+            });
+          }
+          setDentistName(tempName);
+          toast.success('Name updated successfully');
+        } else {
+          // Initialize users collection if it doesn't exist
+          const newUserRef = push(userRef);
+          await update(newUserRef, {
+            role: 'dentist',
+            personName: tempName,
+            createdAt: new Date().toISOString()
+          });
+          setDentistName(tempName);
+          toast.success('Name initialized successfully');
+        }
+      });
+    } catch (error) {
+      console.error('Error updating name:', error);
+      toast.error('Failed to update name');
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setTempName(dentistName);
+    setIsEditing(false);
+  };
+
+  return (
+    <SidebarContainer isCollapsed={isCollapsed}>
+      <ToggleButton onClick={() => setIsCollapsed(!isCollapsed)}>
+        {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+      </ToggleButton>
+
+      <LogoContainer>
+        {!isCollapsed && (
+          <LogoText>
+            {isEditing ? (
+              <>
+                <NameInput
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSave()}
+                />
+                <ActionButtons>
+                  <ActionButton onClick={handleSave} title="Save">
+                    <Check size={16} />
+                  </ActionButton>
+                  <ActionButton onClick={handleCancel} title="Cancel">
+                    <X size={16} />
+                  </ActionButton>
+                </ActionButtons>
+              </>
+            ) : (
+              <>
+                {dentistName}
+                <EditButton onClick={handleEditClick} title="Edit name">
+                  <Edit2 size={16} />
+                </EditButton>
+              </>
+            )}
+          </LogoText>
+        )}
+      </LogoContainer>
+
+      <SidebarMenu>
+        <SidebarButton
+          isActive={activeView === 'examination'}
+          onClick={() => setActiveView('examination')}
+          title="Dental Examination"
+        >
+          <UserPlus size={iconSize} />
+          {!isCollapsed && <span>Dental Examination</span>}
+        </SidebarButton>
+        <SidebarButton
+          isActive={activeView === 'appointments'}
+          onClick={() => setActiveView('appointments')}
+          title="Appointments"
+        >
+          <Calendar size={iconSize} />
+          {!isCollapsed && <span>Appointments</span>}
+        </SidebarButton>
+      </SidebarMenu>
+
+      <SidebarFooter>
+        <SidebarButton
+          onClick={() => navigate('/')}
+          title="Logout"
+        >
+          <LogOut size={iconSize} />
+          {!isCollapsed && <span>Logout</span>}
+        </SidebarButton>
+      </SidebarFooter>
+    </SidebarContainer>
+  );
 }
 
 export default Sidebar;

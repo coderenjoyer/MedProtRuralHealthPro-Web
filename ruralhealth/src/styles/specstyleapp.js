@@ -13,22 +13,6 @@ export const MainContent = styled.main`
   background-color: #f5f7fb;
   color: black;
   overflow-y: auto;
-  margin-left: 250px;
+  margin-left: ${({ isCollapsed }) => (isCollapsed ? '70px' : '250px')};
   transition: margin-left 0.3s ease;
 `
-
-export const ExaminationView = styled.div`
-  display: flex;
-  gap: 20px;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  color: black;
-
-  h1 {
-    color: black;
-    font-size: 24px;
-    font-weight: 600;
-  }
-`
-

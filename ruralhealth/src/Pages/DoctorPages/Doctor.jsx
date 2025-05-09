@@ -5,6 +5,8 @@ import MainContentList from "../../Pages/DoctorPages/Maincontent";
 import MainContentPatient from "../../Pages/DoctorPages/Maincontpatient";
 import Appointments from "../../Components/PatRegisComp/PatAppo";
 import styled from "styled-components";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Wrapper = styled.div`
   display: flex;
@@ -89,6 +91,19 @@ const Doctor = () => {
 
   return (
     <Wrapper>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        limit={1}
+      />
       <Sidebar 
         selectedButton={selectedButton} 
         setSelectedButton={setSelectedButton} 
