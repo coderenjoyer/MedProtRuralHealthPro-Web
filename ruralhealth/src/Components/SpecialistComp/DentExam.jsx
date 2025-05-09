@@ -7,6 +7,47 @@ import { ref, onValue, push, update, get } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { HelpCircle, Info } from 'lucide-react';
+
+// Tooltip styled components
+const TooltipContainer = styled.div`
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 300px;
+  z-index: 1100;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  opacity: ${({ isVisible }) => (isVisible ? 1 : 0)};
+  visibility: ${({ isVisible }) => (isVisible ? 'visible' : 'hidden')};
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  white-space: normal;
+`;
+
+const HelpButton = styled.button`
+  background: none;
+  border: none;
+  cursor: help;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+  color: #4FC3F7;
+  
+  &:hover {
+    color: #29B6F6;
+  }
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  position: relative;
+`;
 
 const MainContainer = styled(motion.div)`
   display: grid;
@@ -369,6 +410,9 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
     teethCondition: "",
     gums: ""
   });
+  
+  // Add state for tooltips
+  const [activeTooltip, setActiveTooltip] = useState(null);
 
   const showFeedback = (message, type = 'success') => {
     // Prevent duplicate notifications
@@ -610,6 +654,15 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
     }
   }
 
+  // Helper functions for tooltips
+  const showTooltip = (id) => {
+    setActiveTooltip(id);
+  };
+
+  const hideTooltip = () => {
+    setActiveTooltip(null);
+  };
+
   return (
     <>
       <ToastContainer
@@ -631,14 +684,52 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
           <PatientListSection>
             <PatientListContainer>
               <PatientListHeader>
-                <PatientListTitle>Patients</PatientListTitle>
-                <SearchInput
-                  type="text"
-                  placeholder="Search patients..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                <SectionHeader>
+                  <PatientListTitle>Patients</PatientListTitle>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('patients-list')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <HelpCircle size={16} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                <div style={{ position: 'relative' }}>
+                  <SearchInput
+                    type="text"
+                    placeholder="Search patients..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onMouseEnter={() => showTooltip('patient-search')}
+                    onMouseLeave={hideTooltip}
+                  />
+                  
+                  {activeTooltip === 'patient-search' && (
+                    <TooltipContainer 
+                      isVisible={true}
+                      style={{
+                        top: '40px',
+                        right: '0',
+                      }}
+                    >
+                      Search for patients by name or ID
+                    </TooltipContainer>
+                  )}
+                </div>
               </PatientListHeader>
+              
+              {activeTooltip === 'patients-list' && (
+                <TooltipContainer 
+                  isVisible={true}
+                  style={{
+                    top: '50px',
+                    left: '100px',
+                  }}
+                >
+                  Select a patient from this list to begin a dental examination. You can search for specific patients using the search box.
+                </TooltipContainer>
+              )}
+              
               <PatientTableContainer>
                 <PatientTable>
                   <thead>
@@ -663,9 +754,25 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
                             disabled={selectedPatient?.id === patient.id}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
+                            onMouseEnter={() => showTooltip(`select-${patient.id}`)}
+                            onMouseLeave={hideTooltip}
                           >
                             {selectedPatient?.id === patient.id ? 'Selected' : 'Select'}
                           </SelectButton>
+                          
+                          {activeTooltip === `select-${patient.id}` && (
+                            <TooltipContainer 
+                              isVisible={true}
+                              style={{
+                                top: '0',
+                                right: '-120px',
+                              }}
+                            >
+                              {selectedPatient?.id === patient.id 
+                                ? 'This patient is currently selected' 
+                                : `Select ${patient.personalInfo?.firstName} for dental examination`}
+                            </TooltipContainer>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -677,12 +784,53 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
 
           <ExaminationSection>
             <Header>
-              <Title>Dental Examination</Title>
+              <SectionHeader>
+                <Title>Dental Examination</Title>
+                <HelpButton
+                  onMouseEnter={() => showTooltip('dental-exam')}
+                  onMouseLeave={hideTooltip}
+                >
+                  <HelpCircle size={16} />
+                </HelpButton>
+                
+                {activeTooltip === 'dental-exam' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '40px',
+                      left: '150px',
+                    }}
+                  >
+                    Complete this form to document a dental examination. Patient information is auto-filled when you select a patient from the list.
+                  </TooltipContainer>
+                )}
+              </SectionHeader>
             </Header>
 
             <Form onSubmit={handleSubmit}>
               <FormGroup>
-                <Label>Full Name</Label>
+                <SectionHeader>
+                  <Label>Full Name</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('fullname-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'fullname-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '30px',
+                      left: '100px',
+                    }}
+                  >
+                    Patient's full name. This field is automatically populated when you select a patient.
+                  </TooltipContainer>
+                )}
+                
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <Input 
                     type="text" 
@@ -706,7 +854,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
               </FormGroup>
 
               <FormGroup>
-                <Label>Email</Label>
+                <SectionHeader>
+                  <Label>Email</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('email-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'email-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '30px',
+                      left: '100px',
+                    }}
+                  >
+                    Patient's email address. Automatically populated from patient records.
+                  </TooltipContainer>
+                )}
+                
                 <Input 
                   type="email" 
                   name="email" 
@@ -718,7 +887,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
               </FormGroup>
 
               <FormGroup>
-                <Label>Contact Number</Label>
+                <SectionHeader>
+                  <Label>Contact Number</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('contact-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'contact-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '30px',
+                      left: '100px',
+                    }}
+                  >
+                    Patient's contact number. Automatically populated from patient records.
+                  </TooltipContainer>
+                )}
+                
                 <Input 
                   type="tel" 
                   name="contactNumber" 
@@ -730,7 +920,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
               </FormGroup>
 
               <FormGroup>
-                <Label>Previous Dental Issues</Label>
+                <SectionHeader>
+                  <Label>Previous Dental Issues</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('previous-issues-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'previous-issues-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '30px',
+                      left: '100px',
+                    }}
+                  >
+                    Review and update information about the patient's previous dental issues. This helps track the patient's dental history.
+                  </TooltipContainer>
+                )}
+                
                 <TextArea 
                   name="previousIssues" 
                   placeholder="Describe any previous dental issues" 
@@ -740,7 +951,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
               </FormGroup>
 
               <FormGroup>
-                <Label>Current Dental Issues</Label>
+                <SectionHeader>
+                  <Label>Current Dental Issues</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('current-issues-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'current-issues-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '30px',
+                      left: '100px',
+                    }}
+                  >
+                    Document the patient's current dental complaints and issues that brought them in for this examination.
+                  </TooltipContainer>
+                )}
+                
                 <TextArea 
                   name="presentIssues" 
                   placeholder="Describe current dental issues" 
@@ -750,7 +982,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
               </FormGroup>
 
               <FormGroup>
-                <Label>Previous Medications</Label>
+                <SectionHeader>
+                  <Label>Previous Medications</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('previous-meds-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'previous-meds-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '30px',
+                      left: '130px',
+                    }}
+                  >
+                    Previous medications prescribed to the patient. This is shown for reference only.
+                  </TooltipContainer>
+                )}
+                
                 <div style={{ 
                   padding: '0.5rem', 
                   marginBottom: '0.5rem', 
@@ -761,7 +1014,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
                 }}>
                   {previousData.medications || 'No previous medications recorded'}
                 </div>
-                <Label>Current Medications</Label>
+                <SectionHeader>
+                  <Label>Current Medications</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('current-meds-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'current-meds-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '155px',
+                      left: '130px',
+                    }}
+                  >
+                    Document any medications the patient is currently taking or that you're prescribing as part of this examination.
+                  </TooltipContainer>
+                )}
+                
                 <TextArea 
                   name="medications" 
                   placeholder="List current medications" 
@@ -771,7 +1045,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
               </FormGroup>
 
               <FormGroup>
-                <Label>Previous Teeth Condition</Label>
+                <SectionHeader>
+                  <Label>Previous Teeth Condition</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('previous-teeth-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'previous-teeth-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '30px',
+                      left: '150px',
+                    }}
+                  >
+                    The condition of the patient's teeth from their last examination. Shown for reference only.
+                  </TooltipContainer>
+                )}
+                
                 <div style={{ 
                   padding: '0.5rem', 
                   marginBottom: '0.5rem', 
@@ -782,7 +1077,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
                 }}>
                   {previousData.teethCondition || 'No previous teeth condition recorded'}
                 </div>
-                <Label>Current Teeth Condition</Label>
+                <SectionHeader>
+                  <Label>Current Teeth Condition</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('current-teeth-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'current-teeth-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '155px',
+                      left: '150px',
+                    }}
+                  >
+                    Select the current overall condition of the patient's teeth based on your examination.
+                  </TooltipContainer>
+                )}
+                
                 <Select name="teethCondition" value={formData.teethCondition} onChange={handleChange}>
                   <option value="Good">Good</option>
                   <option value="Fair">Fair</option>
@@ -791,7 +1107,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
               </FormGroup>
 
               <FormGroup>
-                <Label>Previous Gums Condition</Label>
+                <SectionHeader>
+                  <Label>Previous Gums Condition</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('previous-gums-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'previous-gums-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '30px',
+                      left: '150px',
+                    }}
+                  >
+                    The condition of the patient's gums from their last examination. Shown for reference only.
+                  </TooltipContainer>
+                )}
+                
                 <div style={{ 
                   padding: '0.5rem', 
                   marginBottom: '0.5rem', 
@@ -802,7 +1139,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
                 }}>
                   {previousData.gums || 'No previous gums condition recorded'}
                 </div>
-                <Label>Current Gums Condition</Label>
+                <SectionHeader>
+                  <Label>Current Gums Condition</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('current-gums-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'current-gums-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '155px',
+                      left: '150px',
+                    }}
+                  >
+                    Select the current condition of the patient's gums based on your examination.
+                  </TooltipContainer>
+                )}
+                
                 <Select name="gums" value={formData.gums} onChange={handleChange}>
                   <option value="Healthy">Healthy</option>
                   <option value="Inflamed">Inflamed</option>
@@ -811,7 +1169,28 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
               </FormGroup>
 
               <FormGroup>
-                <Label>Recommended Treatment</Label>
+                <SectionHeader>
+                  <Label>Recommended Treatment</Label>
+                  <HelpButton
+                    onMouseEnter={() => showTooltip('treatment-help')}
+                    onMouseLeave={hideTooltip}
+                  >
+                    <Info size={14} />
+                  </HelpButton>
+                </SectionHeader>
+                
+                {activeTooltip === 'treatment-help' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      top: '30px',
+                      left: '150px',
+                    }}
+                  >
+                    Document your recommended dental treatments, procedures, or follow-up appointments for the patient based on this examination.
+                  </TooltipContainer>
+                )}
+                
                 <TextArea 
                   name="treatment" 
                   placeholder="Describe suggested treatment" 
@@ -821,12 +1200,50 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
               </FormGroup>
 
               <ButtonContainer>
-                <ClearButton type="button" onClick={handleClear} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <ClearButton 
+                  type="button" 
+                  onClick={handleClear} 
+                  whileHover={{ scale: 1.05 }} 
+                  whileTap={{ scale: 0.95 }}
+                  onMouseEnter={() => showTooltip('clear-btn')}
+                  onMouseLeave={hideTooltip}
+                >
                   Clear
                 </ClearButton>
-                <SubmitButton type="submit" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                
+                {activeTooltip === 'clear-btn' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      bottom: '50px',
+                      left: '0px',
+                    }}
+                  >
+                    Clear the form to start over. Patient information will remain filled.
+                  </TooltipContainer>
+                )}
+                
+                <SubmitButton 
+                  type="submit" 
+                  whileHover={{ scale: 1.05 }} 
+                  whileTap={{ scale: 0.95 }}
+                  onMouseEnter={() => showTooltip('submit-btn')}
+                  onMouseLeave={hideTooltip}
+                >
                   Submit
                 </SubmitButton>
+                
+                {activeTooltip === 'submit-btn' && (
+                  <TooltipContainer 
+                    isVisible={true}
+                    style={{
+                      bottom: '50px',
+                      right: '0px',
+                    }}
+                  >
+                    Save the dental examination to the patient's record. This will update their dental history.
+                  </TooltipContainer>
+                )}
               </ButtonContainer>
             </Form>
           </ExaminationSection>
