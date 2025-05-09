@@ -269,6 +269,29 @@ function Appointments({ selectedPatient, onPatientSelect }) {
             return;
         }
 
+        // Create confirmation message
+        const confirmationMessage = `
+Please confirm the following appointment details:
+
+Patient Information:
+------------------
+Name: ${formData.lastName}, ${formData.firstName} ${formData.middleName}
+Email: ${formData.email || 'Not provided'}
+
+Appointment Details:
+------------------
+Date: ${formData.appointmentDate}
+Time: ${formData.appointmentTime}
+Description: ${formData.description || 'No description provided'}
+
+Do you want to proceed with scheduling this appointment?`;
+
+        // Show confirmation dialog
+        const isConfirmed = window.confirm(confirmationMessage);
+        if (!isConfirmed) {
+            return;
+        }
+
         try {
             const appointmentsRef = ref(database, `rhp/patients/${currentPatient.id}/appointments`);
             const appointmentData = {
