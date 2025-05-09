@@ -402,6 +402,31 @@ const MainContentPatient = ({ selectedPatient }) => {
       return;
     }
 
+    // Create confirmation message
+    const confirmationMessage = `
+Please confirm the following information:
+
+Patient Name: ${formData.patientName}
+Medical Care: ${formData.medicalCare}
+Chief Complaint: ${formData.chiefComplaint}
+Diagnosis: ${formData.diagnosis}
+Present Illnesses: ${formData.presentIllnesses}
+Past Illnesses: ${formData.pastIllnesses}
+Comments: ${formData.comments}
+
+Allergies/Medicines to Avoid:
+${allergies.map(med => `- ${med.label}`).join('\n')}
+
+Planned Medicines:
+${plannedMeds.map(med => `- ${med.label} (Quantity: ${quantities[med.value] || 0})`).join('\n')}
+
+Do you want to save this information?`;
+
+    // Show confirmation dialog
+    if (!window.confirm(confirmationMessage)) {
+      return;
+    }
+
     try {
       // Create updates object for all changes
       const updates = {};
@@ -435,7 +460,8 @@ const MainContentPatient = ({ selectedPatient }) => {
         // Add new visit to existing visits
         const visitsRef = ref(database, `rhp/patients/${selectedPatient.id}/patientVisits/visits`);
         const newVisitRef = push(visitsRef);
-        updates[newVisitRef.toString()] = visitData;
+        const newVisitKey = newVisitRef.key;
+        updates[`rhp/patients/${selectedPatient.id}/patientVisits/visits/${newVisitKey}`] = visitData;
       }
 
       // Update doctorinteraction information
