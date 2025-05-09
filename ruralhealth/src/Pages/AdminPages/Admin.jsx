@@ -397,8 +397,8 @@ export default function Dashboard() {
         Object.entries(data || {}).forEach(([patientId, patient]) => {
           console.log(`Processing patient ${patientId}:`, patient);
           
-          // Process barangay data
-          const barangay = patient.contactInfo?.address?.barangay;
+          // Process barangay data (use address.barangay, fallback to contactInfo.address.barangay)
+          const barangay = patient.address?.barangay || patient.contactInfo?.address?.barangay;
           if (barangay && barangay !== '') {
             if (BARANGAY_LIST.includes(barangay)) {
               barangayCounts[barangay] = (barangayCounts[barangay] || 0) + 1;
@@ -648,8 +648,6 @@ export default function Dashboard() {
           <p>{loading ? "Loading..." : patientStats.totalPatients}</p>
         </TotalPatients>
 
-        <BarangayStats />
-
         <GraphRow>
           <GraphSection
             initial={{ opacity: 0, y: 20 }}
@@ -714,42 +712,6 @@ export default function Dashboard() {
             )}
           </GraphContainer>
         </GraphSection>
-
-        <SectionTitle
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.8 }}
-        >
-          Patient Registered From Different Barangays:
-        </SectionTitle>
-        <StatsGrid
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.9 }}
-        >
-          {loading ? (
-            <LoadingMessage
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              Loading statistics...
-            </LoadingMessage>
-          ) : (
-            BARANGAY_LIST.map((brgy, index) => (
-              <StatCard 
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 * index }}
-                whileHover={{ scale: 1.02 }}
-              >
-                <h3>{brgy}</h3>
-                <p>{patientStats.barangayStats[brgy] || 0}</p>
-              </StatCard>
-            ))
-          )}
-        </StatsGrid>
 
         <TableSection
           initial={{ opacity: 0, y: 20 }}
