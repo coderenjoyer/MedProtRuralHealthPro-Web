@@ -309,20 +309,51 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         }));
     };
 
+    const sendCancellationEmail = async (appointment, patient) => {
+        try {
+            // Create a cancellation record in Firebase
+            const cancellationRef = ref(database, 'rhp/appointmentCancellations');
+            await push(cancellationRef, {
+                patientId: patient.id,
+                patientEmail: patient.contactInfo?.email,
+                patientName: `${patient.personalInfo?.firstName} ${patient.personalInfo?.lastName}`,
+                appointmentDate: appointment.appointmentDate,
+                appointmentTime: appointment.appointmentTime,
+                description: appointment.description || 'No specific description provided',
+                cancelledAt: new Date().toISOString(),
+                status: 'pending'
+            });
+
+            console.log('Cancellation email scheduled successfully');
+        } catch (error) {
+            console.error('Error scheduling cancellation email:', error);
+            toast.error('Failed to schedule cancellation email');
+        }
+    };
+
     const handleCancelAppointment = async () => {
         try {
             const patient = localSelectedPatient || selectedPatient;
             if (!patient) throw new Error("No patient selected");
             
+            // Get current appointment before cancelling
+            const appointmentsRef = ref(database, `rhp/patients/${patient.id}/appointments`);
+            const appointmentSnapshot = await get(appointmentsRef);
+            const currentAppointment = appointmentSnapshot.val();
+            
             // Set appointments to null when cancelled
-            const appointmentRef = ref(database, `rhp/patients/${patient.id}/appointments`);
-            await set(appointmentRef, null);
+            await set(appointmentsRef, null);
             
             // Update patient's next appointment to null
             const patientRef = ref(database, `rhp/patients/${patient.id}`);
             await update(patientRef, {
                 'registrationInfo.nextAppointment': null
             });
+
+            // Send cancellation email if there was an appointment
+            if (currentAppointment && patient.contactInfo?.email) {
+                await sendCancellationEmail(currentAppointment, patient);
+            }
             
             toast.success("Appointment cancelled successfully");
         } catch (error) {
