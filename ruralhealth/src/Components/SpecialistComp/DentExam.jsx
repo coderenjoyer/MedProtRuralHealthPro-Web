@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import styled from "styled-components"
 import { motion } from "framer-motion"
-import { ref, onValue, push, update } from 'firebase/database';
+import { ref, onValue, push, update, get } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -532,19 +532,54 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
         status: 'completed'
       };
 
+      // Create visit record
+      const visitData = {
+        timestamp: new Date().toISOString(),
+        type: 'dental',
+        teethCondition: formData.teethCondition,
+        gums: formData.gums,
+        treatment: formData.treatment,
+        previousIssues: formData.previousIssues,
+        presentIssues: formData.presentIssues,
+        medications: formData.medications
+      };
+
+      // Initialize patientVisits if it doesn't exist
+      const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
+      const patientSnapshot = await get(patientRef);
+      const patientData = patientSnapshot.val();
+
+      const updates = {};
+
+      if (!patientData.patientVisits) {
+        updates[`rhp/patients/${selectedPatient.id}/patientVisits`] = {
+          visits: [visitData]
+        };
+      } else {
+        // Add new visit to existing visits
+        const visitsRef = ref(database, `rhp/patients/${selectedPatient.id}/patientVisits/visits`);
+        const newVisitRef = push(visitsRef);
+        updates[newVisitRef.toString()] = visitData;
+      }
+
       // Save to dental examinations collection
       const examinationRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
       const newExaminationRef = push(examinationRef);
-      await update(newExaminationRef, examinationData);
+      updates[newExaminationRef.toString()] = examinationData;
 
       // Update dental history
-      const dentalHistoryRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalHistory`);
-      await update(dentalHistoryRef, {
+      updates[`rhp/patients/${selectedPatient.id}/dentalHistory`] = {
         previousIssues: formData.previousIssues,
         presentIssues: formData.presentIssues,
         medications: formData.medications,
         lastUpdated: new Date().toISOString()
-      });
+      };
+
+      // Update last visit timestamp
+      updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
+
+      // Apply all updates in one transaction
+      await update(ref(database), updates);
 
       toast.success("Dental examination saved successfully");
       handleClear();

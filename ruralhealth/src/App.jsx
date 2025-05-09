@@ -8,6 +8,7 @@ import Appointment from "./Components/PatRegisComp/PatAppo"
 import UserDatabase from "./Pages/AdminPages/Userdatabase"
 import PatientDatabase from "./Pages/AdminPages/PatientDatabase"
 import MedicineInventory from "./Pages/Features/MedInven"
+import AdminAppointments from "./Pages/AdminPages/AdminAppointments"
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -25,7 +26,7 @@ function App() {
         <Route path="/admin/user-database" element={<UserDatabase />} />
         <Route path="/admin/patient-database" element={<PatientDatabase />} />
         <Route path="/admin/medicine-inventory" element={<MedicineInventory />} />
-
+        <Route path="/admin/appointments" element={<AdminAppointments />} />
         
         {/* Other Routes */}
         <Route path="/doctor" element={<Doctor />} />

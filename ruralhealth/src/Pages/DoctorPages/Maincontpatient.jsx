@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import Select from "react-select";
 import { Camera } from "lucide-react";
-import { ref, onValue, update } from "firebase/database";
+import { ref, onValue, update, get, push } from "firebase/database";
 import { database } from "../../Firebase/firebase";
 import { toast } from "react-toastify";
 
@@ -405,6 +405,38 @@ const MainContentPatient = ({ selectedPatient }) => {
     try {
       // Create updates object for all changes
       const updates = {};
+
+      // Create visit record
+      const visitData = {
+        timestamp: new Date().toISOString(),
+        medicalCare: formData.medicalCare,
+        chiefComplaint: formData.chiefComplaint,
+        diagnosis: formData.diagnosis,
+        presentIllnesses: formData.presentIllnesses,
+        pastIllnesses: formData.pastIllnesses,
+        comments: formData.comments,
+        allergies: allergies.map(med => med.value),
+        prescribedMeds: plannedMeds.map(med => ({
+          name: med.label,
+          quantity: quantities[med.value] || 0
+        }))
+      };
+
+      // Initialize patientVisits if it doesn't exist
+      const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
+      const patientSnapshot = await get(patientRef);
+      const patientData = patientSnapshot.val();
+
+      if (!patientData.patientVisits) {
+        updates[`rhp/patients/${selectedPatient.id}/patientVisits`] = {
+          visits: [visitData]
+        };
+      } else {
+        // Add new visit to existing visits
+        const visitsRef = ref(database, `rhp/patients/${selectedPatient.id}/patientVisits/visits`);
+        const newVisitRef = push(visitsRef);
+        updates[newVisitRef.toString()] = visitData;
+      }
 
       // Update doctorinteraction information
       updates[`rhp/patients/${selectedPatient.id}/doctorinteraction`] = {

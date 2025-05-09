@@ -2,8 +2,36 @@ import styled from "styled-components"
 import Sidebar from "../../Components/AdminComp/Sidebar"
 import PatientTable from "../../Components/AdminComp/PatientTable"
 import { useState, useEffect } from "react"
-import { FaBars } from "react-icons/fa"
+import { FaBars, FaCalendarAlt } from "react-icons/fa"
 import { getAllPatients } from "../../Firebase/patientOperations"
+import { ToastContainer } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bar, Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const DashboardContainer = styled.div`
   display: flex;
@@ -19,7 +47,7 @@ const DashboardContainer = styled.div`
   }
 `
 
-const MainContent = styled.main`
+const MainContent = styled(motion.main)`
   flex: 1;
   max-width: 1200px; 
   margin: 0 auto;
@@ -36,7 +64,7 @@ const MainContent = styled.main`
   }
 `;
 
-const Header = styled.header`
+const Header = styled(motion.header)`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -50,7 +78,7 @@ const Header = styled.header`
   }
 `
 
-const Title = styled.h1`
+const DashboardTitle = styled(motion.h1)`
   font-size: 24px;
   color: #095D7E;
   margin: 0;
@@ -60,7 +88,7 @@ const Title = styled.h1`
   }
 `
 
-const Time = styled.span`
+const Time = styled(motion.span)`
   color: #095D7E;
 
   @media (max-width: 768px) {
@@ -68,7 +96,7 @@ const Time = styled.span`
   }
 `
 
-const StatsGrid = styled.div`
+const StatsGrid = styled(motion.div)`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
@@ -80,7 +108,7 @@ const StatsGrid = styled.div`
   }
 `
 
-const StatCard = styled.div`
+const StatCard = styled(motion.div)`
   background: white;
   padding: 15px;
   border-radius: 4px;
@@ -112,7 +140,7 @@ const StatCard = styled.div`
   }
 `
 
-const TableSection = styled.section`
+const TableSection = styled(motion.section)`
   background: white;
   padding: 20px;
   border-radius: 4px;
@@ -133,7 +161,7 @@ const TableSection = styled.section`
   }
 `
 
-const MenuButton = styled.button`
+const MenuButton = styled(motion.button)`
   display: none;
   background: none;
   border: none;
@@ -147,7 +175,7 @@ const MenuButton = styled.button`
   }
 `
 
-const TotalPatients = styled.div`
+const TotalPatients = styled(motion.div)`
   background: #095D7E;
   color: white;
   padding: 15px;
@@ -178,24 +206,98 @@ const TotalPatients = styled.div`
   }
 `
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled(motion.h2)`
   color: #095D7E;
 `
 
-const LoadingMessage = styled.div`
+const LoadingMessage = styled(motion.div)`
   text-align: center;
   color: #095D7E;
   font-size: 16px;
 `
 
+const GraphRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 30px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const GraphSection = styled(motion.section)`
+  background: white;
+  padding: 20px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+
+  h2 {
+    margin: 0 0 20px 0;
+    color: #095D7E;
+  }
+
+  @media (max-width: 768px) {
+    padding: 15px;
+    overflow-x: auto;
+
+    h2 {
+      font-size: 18px;
+    }
+  }
+`;
+
+const GraphContainer = styled.div`
+  height: 400px;
+  width: 100%;
+  position: relative;
+
+  @media (max-width: 768px) {
+    height: 300px;
+    min-width: 500px;
+  }
+`;
+
+const AppointmentButton = styled(motion.button)`
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+  margin-left: auto;
+
+  &:hover {
+    background-color: #45a049;
+  }
+
+  svg {
+    font-size: 16px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+`;
+
 export default function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [patientStats, setPatientStats] = useState({
     totalPatients: 0,
-    barangayStats: []
+    barangayStats: [],
+    monthlyStats: []
   })
   const [loading, setLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const navigate = useNavigate();
 
   const BARANGAY_LIST = [
     "Poblacion",
@@ -233,12 +335,15 @@ export default function Dashboard() {
             return acc
           }, {})
 
-          // Count patients per barangay
+          // Initialize monthly counts for registrations and visits
+          const monthlyRegistrations = Array(12).fill(0)
+          const monthlyVisits = Array(12).fill(0)
+          const currentYear = new Date().getFullYear()
+
+          // Process patient data
           Object.values(result.data || {}).forEach(patient => {
-            console.log('Processing patient:', patient)
+            // Process barangay data
             const barangay = patient.contactInfo?.address?.barangay
-            console.log('Patient barangay:', barangay)
-            
             if (barangay && barangay !== '') {
               if (BARANGAY_LIST.includes(barangay)) {
                 barangayCounts[barangay] = (barangayCounts[barangay] || 0) + 1
@@ -248,9 +353,35 @@ export default function Dashboard() {
             } else {
               barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1
             }
-          })
 
-          console.log('Barangay counts:', barangayCounts)
+            // Process registration date
+            try {
+              if (patient.registrationInfo?.registrationDate) {
+                const regDate = new Date(patient.registrationInfo.registrationDate)
+                if (!isNaN(regDate.getTime())) {  // Check if date is valid
+                  if (regDate.getFullYear() === currentYear) {
+                    monthlyRegistrations[regDate.getMonth()]++
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error processing registration date for patient:', patient.id, error)
+            }
+
+            // Process visits
+            try {
+              if (patient.patientVisits?.visits) {
+                Object.values(patient.patientVisits.visits).forEach(visit => {
+                  const visitDate = new Date(visit.timestamp)
+                  if (!isNaN(visitDate.getTime()) && visitDate.getFullYear() === currentYear) {
+                    monthlyVisits[visitDate.getMonth()]++
+                  }
+                })
+              }
+            } catch (error) {
+              console.error('Error processing visits for patient:', patient.id, error)
+            }
+          })
 
           // Convert to array format for display
           const barangayStats = BARANGAY_LIST.map(name => ({
@@ -258,11 +389,21 @@ export default function Dashboard() {
             count: barangayCounts[name] || 0
           }))
 
-          console.log('Final stats:', barangayStats)
+          // Prepare monthly stats
+          const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+          ]
+          const monthlyStats = monthNames.map((name, index) => ({
+            name,
+            registrations: monthlyRegistrations[index],
+            visits: monthlyVisits[index]
+          }))
 
           setPatientStats({
             totalPatients: Object.keys(result.data || {}).length,
-            barangayStats: barangayStats
+            barangayStats: barangayStats,
+            monthlyStats: monthlyStats
           })
         }
       } catch (error) {
@@ -275,16 +416,164 @@ export default function Dashboard() {
     fetchPatientStats()
   }, [])
 
+  // Bar chart data configuration
+  const barChartData = {
+    labels: patientStats.barangayStats.map(stat => stat.name),
+    datasets: [
+      {
+        label: 'Number of Patients',
+        data: patientStats.barangayStats.map(stat => stat.count),
+        backgroundColor: '#095D7E',
+        borderColor: '#095D7E',
+        borderWidth: 1,
+        borderRadius: 4,
+        maxBarThickness: 50,
+      },
+    ],
+  };
+
+  // Line chart data configuration for visits
+  const visitsChartData = {
+    labels: patientStats.monthlyStats.map(stat => stat.name),
+    datasets: [
+      {
+        label: 'Patient Visits',
+        data: patientStats.monthlyStats.map(stat => stat.visits),
+        borderColor: '#4CAF50',
+        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: '#4CAF50',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      },
+    ],
+  };
+
+  // Update the existing line chart data for registrations
+  const lineChartData = {
+    labels: patientStats.monthlyStats.map(stat => stat.name),
+    datasets: [
+      {
+        label: 'Patient Registrations',
+        data: patientStats.monthlyStats.map(stat => stat.registrations),
+        borderColor: '#4FC3F7',
+        backgroundColor: 'rgba(79, 195, 247, 0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: '#4FC3F7',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      title: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `Patients: ${context.raw}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1,
+          precision: 0
+        },
+        title: {
+          display: true,
+          text: 'Number of Patients'
+        }
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Month'
+        }
+      }
+    },
+  };
+
+  const handleAppointmentClick = () => {
+    navigate('/admin/appointments');
+  };
+
   return (
     <DashboardContainer>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        limit={1}
+      />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <MainContent $isSidebarOpen={isSidebarOpen}>
-        <Header>
-          <MenuButton onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+      <MainContent 
+        $isSidebarOpen={isSidebarOpen}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <MenuButton 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
             <FaBars />
           </MenuButton>
-          <Title>DASHBOARD</Title>
-          <Time>
+          <DashboardTitle
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
+            DASHBOARD
+          </DashboardTitle>
+          <AppointmentButton
+            onClick={handleAppointmentClick}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+          >
+            <FaCalendarAlt />
+            Manage Appointments
+          </AppointmentButton>
+          <Time
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+          >
             {currentTime.toLocaleString('en-US', { 
               weekday: 'long',
               hour: 'numeric',
@@ -295,18 +584,109 @@ export default function Dashboard() {
           </Time>
         </Header>
 
-        <TotalPatients>
+        <TotalPatients
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
+        >
           <h2>Total Patients Registered</h2>
           <p>{loading ? "Loading..." : patientStats.totalPatients}</p>
         </TotalPatients>
 
-        <SectionTitle>Patient Registered From Different Barangays:</SectionTitle>
-        <StatsGrid>
+        <GraphRow>
+          <GraphSection
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.5 }}
+          >
+            <h2>Patient Distribution by Barangay</h2>
+            <GraphContainer>
+              {loading ? (
+                <LoadingMessage
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  Loading graph...
+                </LoadingMessage>
+              ) : (
+                <Bar data={barChartData} options={chartOptions} />
+              )}
+            </GraphContainer>
+          </GraphSection>
+
+          <GraphSection
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.6 }}
+          >
+            <h2>Monthly Patient Registration</h2>
+            <GraphContainer>
+              {loading ? (
+                <LoadingMessage
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  Loading graph...
+                </LoadingMessage>
+              ) : (
+                <Line data={lineChartData} options={chartOptions} />
+              )}
+            </GraphContainer>
+          </GraphSection>
+        </GraphRow>
+
+        <GraphSection
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.7 }}
+        >
+          <h2>Monthly Patient Visits</h2>
+          <GraphContainer>
+            {loading ? (
+              <LoadingMessage
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                Loading graph...
+              </LoadingMessage>
+            ) : (
+              <Line data={visitsChartData} options={chartOptions} />
+            )}
+          </GraphContainer>
+        </GraphSection>
+
+        <SectionTitle
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.8 }}
+        >
+          Patient Registered From Different Barangays:
+        </SectionTitle>
+        <StatsGrid
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.9 }}
+        >
           {loading ? (
-            <LoadingMessage>Loading statistics...</LoadingMessage>
+            <LoadingMessage
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              Loading statistics...
+            </LoadingMessage>
           ) : (
             patientStats.barangayStats.map((stat, index) => (
-              <StatCard key={index}>
+              <StatCard 
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 * index }}
+                whileHover={{ scale: 1.02 }}
+              >
                 <h3>{stat.name}</h3>
                 <p>{stat.count}</p>
               </StatCard>
@@ -314,7 +694,11 @@ export default function Dashboard() {
           )}
         </StatsGrid>
 
-        <TableSection>
+        <TableSection
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 1.0 }}
+        >
           <h2>Recent Patient Data Added:</h2>
           <PatientTable />
         </TableSection>
