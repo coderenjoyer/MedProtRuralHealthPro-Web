@@ -25,7 +25,7 @@ const ContentWrapper = styled.div`
   padding: 2rem;
   height: calc(100vh - 4rem);
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1.5fr 2.5fr; // Adjusted column widths to make cards wider
   gap: 1.5rem;
   background: #f5f7fa;
   overflow: hidden;
@@ -33,10 +33,13 @@ const ContentWrapper = styled.div`
   transition: margin-left 0.3s ease-in-out;
 
   @media (max-width: 1200px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; // Single column layout for smaller screens
     padding: 1rem;
     margin-left: 0;
   }
+
+  // Prevent shrinking when no content is present
+  min-width: 900px;
 `
 
 const PatientListSection = styled.div`
@@ -46,7 +49,9 @@ const PatientListSection = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-`
+  min-width: 300px; // Ensure the section doesn't shrink below this width
+  min-height: 400px; // Add a minimum height to prevent collapsing
+`;
 
 const ExaminationSection = styled.div`
   background: white;
@@ -55,6 +60,7 @@ const ExaminationSection = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 600px; // Ensure the section doesn't shrink below this width
 `
 
 const Header = styled.div`
@@ -239,6 +245,7 @@ const PatientTableContainer = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
+  min-height: 200px; // Add a minimum height to prevent collapsing
   
   &::-webkit-scrollbar {
     width: 6px;
@@ -257,7 +264,7 @@ const PatientTableContainer = styled.div`
       background: #9ca3af;
     }
   }
-`
+`;
 
 const PatientTable = styled.table`
   width: 100%;
@@ -486,78 +493,60 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
     );
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleClear = () => {
-    if (selectedPatient) {
-      setFormData({
-        lastName: selectedPatient.personalInfo?.lastName || "",
-        firstName: selectedPatient.personalInfo?.firstName || "",
-        address: selectedPatient.personalInfo?.address || "",
-        email: selectedPatient.contactInfo?.email || "",
-        contactNumber: selectedPatient.contactInfo?.contactNumber || "",
-        previousIssues: formData.previousIssues || "", // Keep previous issues
-        presentIssues: "",
-        medications: "",
-        teethCondition: "Good",
-        gums: "Healthy",
-        treatment: "",
-      });
-    }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!selectedPatient) {
-        toast.error("Please select a patient first");
-        return;
-    }
-
-    // Create confirmation message
-    const confirmationMessage = `
-Please confirm the following information is correct:
-
-Patient Information:
-------------------
-Name: ${formData.firstName} ${formData.lastName}
-Email: ${formData.email}
-Contact: ${formData.contactNumber}
-
-Dental Examination:
------------------
-Previous Issues: ${formData.previousIssues || 'None'}
-Current Issues: ${formData.presentIssues || 'None'}
-Current Medications: ${formData.medications || 'None'}
-Teeth Condition: ${formData.teethCondition}
-Gums Condition: ${formData.gums}
-Recommended Treatment: ${formData.treatment || 'None'}
-
-Is this information correct?`;
-
+   const handleClear = () => {
     // Show confirmation dialog
-    const isConfirmed = window.confirm(confirmationMessage);
-    if (!isConfirmed) {
-        return;
+    const confirmClear = window.confirm("Are you sure you want to clear the editable fields? This action cannot be undone.");
+    if (!confirmClear) {
+      return; // Exit if the user cancels
     }
+  
+    if (!selectedPatient) {
+      toast.error("No patient selected to clear the form");
+      return;
+    }
+  
+    // Reset only the editable fields
+    setFormData((prev) => ({
+      ...prev,
+      previousIssues: "",
+      presentIssues: "",
+      medications: "",
+      teethCondition: "Good",
+      gums: "Healthy",
+      treatment: "",
+    }));
+  
+    toast.success("Editable fields cleared successfully");
+  };
 
-    try {
-        // Create a new dental examination record
-        const examinationData = {
-            patientId: selectedPatient.id,
-            patientName: `${formData.firstName} ${formData.lastName}`,
-            examinationDate: new Date().toISOString(),
-            teethCondition: formData.teethCondition,
-            gums: formData.gums,
-            treatment: formData.treatment,
-            previousIssues: formData.previousIssues,
-            presentIssues: formData.presentIssues,
-            medications: formData.medications,
-            status: 'completed'
-        };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!selectedPatient) {
+    toast.error("Please select a patient first");
+    return;
+  }
+
+  // Show confirmation dialog
+  const confirmSubmit = window.confirm("Are you sure you want to submit this dental examination?");
+  if (!confirmSubmit) {
+    return; // Exit if the user cancels
+  }
+
+  try {
+    // Create a new dental examination record
+    const examinationData = {
+      patientId: selectedPatient.id,
+      patientName: `${formData.firstName} ${formData.lastName}`,
+      examinationDate: new Date().toISOString(),
+      teethCondition: formData.teethCondition,
+      gums: formData.gums,
+      treatment: formData.treatment,
+      previousIssues: formData.previousIssues,
+      presentIssues: formData.presentIssues,
+      medications: formData.medications,
+      status: 'completed',
+    };
 
         // Create visit record
         const visitData = {
@@ -583,41 +572,31 @@ Is this information correct?`;
         // Create updates object
         const updates = {};
 
-        // Update the latest dental examination
-        const dentalExaminationsRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
-        const dentalExaminationsSnapshot = await get(dentalExaminationsRef);
-        const dentalExaminations = dentalExaminationsSnapshot.val() || {};
-        
-        // Get the latest examination key
-        const latestExamKey = Object.keys(dentalExaminations).pop();
-        
-        if (latestExamKey) {
-            // Update the latest examination
-            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations/${latestExamKey}`] = examinationData;
+        // Initialize or update patientVisits
+        if (!patientData.patientVisits) {
+            updates[`rhp/patients/${selectedPatient.id}/patientVisits`] = {
+                visits: [visitData]
+            };
         } else {
-            // If no previous examination exists, create a new one
-            const newExamRef = push(dentalExaminationsRef);
-            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations/${newExamRef.key}`] = examinationData;
+            const visitsRef = ref(database, `rhp/patients/${selectedPatient.id}/patientVisits/visits`);
+            const newVisitRef = push(visitsRef);
+            const newVisitKey = newVisitRef.key;
+            updates[`rhp/patients/${selectedPatient.id}/patientVisits/visits/${newVisitKey}`] = visitData;
         }
 
-        // Update the latest visit
-        const patientVisitsRef = ref(database, `rhp/patients/${selectedPatient.id}/patientVisits/visits`);
-        const visitsSnapshot = await get(patientVisitsRef);
-        const visits = visitsSnapshot.val() || {};
-        
-        // Get the latest visit key
-        const latestVisitKey = Object.keys(visits).pop();
-        
-        if (latestVisitKey) {
-            // Update the latest visit
-            updates[`rhp/patients/${selectedPatient.id}/patientVisits/visits/${latestVisitKey}`] = visitData;
+        // Initialize or update dentalExaminations
+        if (!patientData.dentalExaminations) {
+            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations`] = {
+                [new Date().getTime()]: examinationData
+            };
         } else {
-            // If no previous visit exists, create a new one
-            const newVisitRef = push(patientVisitsRef);
-            updates[`rhp/patients/${selectedPatient.id}/patientVisits/visits/${newVisitRef.key}`] = visitData;
+            const examinationRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
+            const newExaminationRef = push(examinationRef);
+            const newExamKey = newExaminationRef.key;
+            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations/${newExamKey}`] = examinationData;
         }
 
-        // Update dental history
+        // Initialize or update dentalHistory
         updates[`rhp/patients/${selectedPatient.id}/dentalHistory`] = {
             previousIssues: formData.previousIssues,
             presentIssues: formData.presentIssues,
@@ -625,20 +604,28 @@ Is this information correct?`;
             lastUpdated: new Date().toISOString()
         };
 
-        // Update registration info
-        updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
-        updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastDentalVisit`] = new Date().toISOString();
+        // Initialize or update registrationInfo
+        if (!patientData.registrationInfo) {
+            updates[`rhp/patients/${selectedPatient.id}/registrationInfo`] = {
+                lastVisit: new Date().toISOString(),
+                lastDentalVisit: new Date().toISOString()
+            };
+        } else {
+            updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
+            updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastDentalVisit`] = new Date().toISOString();
+        }
 
         // Apply all updates
         await update(ref(database), updates);
 
-        toast.success("Dental examination updated successfully");
+        toast.success("Dental examination saved successfully");
         handleClear();
     } catch (error) {
-        console.error("Error updating dental examination:", error);
-        toast.error(error.message || "Failed to update dental examination");
+        console.error("Error saving dental examination:", error);
+        toast.error(error.message || "Failed to save dental examination");
     }
   }
+};
 
   return (
     <>
@@ -680,25 +667,33 @@ Is this information correct?`;
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredPatients.map((patient) => (
-                      <TableRow key={patient.id}>
-                        <TableCell>{patient.id || 'N/A'}</TableCell>
-                        <TableCell>
-                          {patient.personalInfo?.firstName} {patient.personalInfo?.lastName}
-                        </TableCell>
-                        <TableCell>{patient.contactInfo?.contactNumber || 'N/A'}</TableCell>
-                        <TableCell>
-                          <SelectButton
-                            onClick={() => handlePatientSelect(patient)}
-                            disabled={selectedPatient?.id === patient.id}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            {selectedPatient?.id === patient.id ? 'Selected' : 'Select'}
-                          </SelectButton>
+                    {filteredPatients.length > 0 ? (
+                      filteredPatients.map((patient) => (
+                        <TableRow key={patient.id}>
+                          <TableCell>{patient.id || 'N/A'}</TableCell>
+                          <TableCell>
+                            {patient.personalInfo?.firstName} {patient.personalInfo?.lastName}
+                          </TableCell>
+                          <TableCell>{patient.contactInfo?.contactNumber || 'N/A'}</TableCell>
+                          <TableCell>
+                            <SelectButton
+                              onClick={() => handlePatientSelect(patient)}
+                              disabled={selectedPatient?.id === patient.id}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              {selectedPatient?.id === patient.id ? 'Selected' : 'Select'}
+                            </SelectButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan="4" style={{ textAlign: 'center', padding: '1rem', color: '#6b7280' }}>
+                          No patients found
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </tbody>
                 </PatientTable>
               </PatientTableContainer>
