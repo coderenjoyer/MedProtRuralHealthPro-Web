@@ -513,100 +513,127 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
     e.preventDefault()
     
     if (!selectedPatient) {
-      toast.error("Please select a patient first");
-      return;
+        toast.error("Please select a patient first");
+        return;
+    }
+
+    // Create confirmation message
+    const confirmationMessage = `
+Please confirm the following information is correct:
+
+Patient Information:
+------------------
+Name: ${formData.firstName} ${formData.lastName}
+Email: ${formData.email}
+Contact: ${formData.contactNumber}
+
+Dental Examination:
+-----------------
+Previous Issues: ${formData.previousIssues || 'None'}
+Current Issues: ${formData.presentIssues || 'None'}
+Current Medications: ${formData.medications || 'None'}
+Teeth Condition: ${formData.teethCondition}
+Gums Condition: ${formData.gums}
+Recommended Treatment: ${formData.treatment || 'None'}
+
+Is this information correct?`;
+
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(confirmationMessage);
+    if (!isConfirmed) {
+        return;
     }
 
     try {
-      // Create a new dental examination record
-      const examinationData = {
-        patientId: selectedPatient.id,
-        patientName: `${formData.firstName} ${formData.lastName}`,
-        examinationDate: new Date().toISOString(),
-        teethCondition: formData.teethCondition,
-        gums: formData.gums,
-        treatment: formData.treatment,
-        previousIssues: formData.previousIssues,
-        presentIssues: formData.presentIssues,
-        medications: formData.medications,
-        status: 'completed'
-      };
-
-      // Create visit record
-      const visitData = {
-        timestamp: new Date().toISOString(),
-        type: 'dental',
-        teethCondition: formData.teethCondition,
-        gums: formData.gums,
-        treatment: formData.treatment,
-        previousIssues: formData.previousIssues,
-        presentIssues: formData.presentIssues,
-        medications: formData.medications
-      };
-
-      // Get patient data first
-      const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
-      const patientSnapshot = await get(patientRef);
-      const patientData = patientSnapshot.val();
-
-      if (!patientData) {
-        throw new Error("Patient not found");
-      }
-
-      // Create updates object
-      const updates = {};
-
-      // Initialize or update patientVisits
-      if (!patientData.patientVisits) {
-        updates[`rhp/patients/${selectedPatient.id}/patientVisits`] = {
-          visits: [visitData]
+        // Create a new dental examination record
+        const examinationData = {
+            patientId: selectedPatient.id,
+            patientName: `${formData.firstName} ${formData.lastName}`,
+            examinationDate: new Date().toISOString(),
+            teethCondition: formData.teethCondition,
+            gums: formData.gums,
+            treatment: formData.treatment,
+            previousIssues: formData.previousIssues,
+            presentIssues: formData.presentIssues,
+            medications: formData.medications,
+            status: 'completed'
         };
-      } else {
-        const visitsRef = ref(database, `rhp/patients/${selectedPatient.id}/patientVisits/visits`);
-        const newVisitRef = push(visitsRef);
-        const newVisitKey = newVisitRef.key;
-        updates[`rhp/patients/${selectedPatient.id}/patientVisits/visits/${newVisitKey}`] = visitData;
-      }
 
-      // Initialize or update dentalExaminations
-      if (!patientData.dentalExaminations) {
-        updates[`rhp/patients/${selectedPatient.id}/dentalExaminations`] = {
-          [new Date().getTime()]: examinationData
+        // Create visit record
+        const visitData = {
+            timestamp: new Date().toISOString(),
+            type: 'dental',
+            teethCondition: formData.teethCondition,
+            gums: formData.gums,
+            treatment: formData.treatment,
+            previousIssues: formData.previousIssues,
+            presentIssues: formData.presentIssues,
+            medications: formData.medications
         };
-      } else {
-        const examinationRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
-        const newExaminationRef = push(examinationRef);
-        const newExamKey = newExaminationRef.key;
-        updates[`rhp/patients/${selectedPatient.id}/dentalExaminations/${newExamKey}`] = examinationData;
-      }
 
-      // Initialize or update dentalHistory
-      updates[`rhp/patients/${selectedPatient.id}/dentalHistory`] = {
-        previousIssues: formData.previousIssues,
-        presentIssues: formData.presentIssues,
-        medications: formData.medications,
-        lastUpdated: new Date().toISOString()
-      };
+        // Get patient data first
+        const patientRef = ref(database, `rhp/patients/${selectedPatient.id}`);
+        const patientSnapshot = await get(patientRef);
+        const patientData = patientSnapshot.val();
 
-      // Initialize or update registrationInfo
-      if (!patientData.registrationInfo) {
-        updates[`rhp/patients/${selectedPatient.id}/registrationInfo`] = {
-          lastVisit: new Date().toISOString(),
-          lastDentalVisit: new Date().toISOString()
+        if (!patientData) {
+            throw new Error("Patient not found");
+        }
+
+        // Create updates object
+        const updates = {};
+
+        // Initialize or update patientVisits
+        if (!patientData.patientVisits) {
+            updates[`rhp/patients/${selectedPatient.id}/patientVisits`] = {
+                visits: [visitData]
+            };
+        } else {
+            const visitsRef = ref(database, `rhp/patients/${selectedPatient.id}/patientVisits/visits`);
+            const newVisitRef = push(visitsRef);
+            const newVisitKey = newVisitRef.key;
+            updates[`rhp/patients/${selectedPatient.id}/patientVisits/visits/${newVisitKey}`] = visitData;
+        }
+
+        // Initialize or update dentalExaminations
+        if (!patientData.dentalExaminations) {
+            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations`] = {
+                [new Date().getTime()]: examinationData
+            };
+        } else {
+            const examinationRef = ref(database, `rhp/patients/${selectedPatient.id}/dentalExaminations`);
+            const newExaminationRef = push(examinationRef);
+            const newExamKey = newExaminationRef.key;
+            updates[`rhp/patients/${selectedPatient.id}/dentalExaminations/${newExamKey}`] = examinationData;
+        }
+
+        // Initialize or update dentalHistory
+        updates[`rhp/patients/${selectedPatient.id}/dentalHistory`] = {
+            previousIssues: formData.previousIssues,
+            presentIssues: formData.presentIssues,
+            medications: formData.medications,
+            lastUpdated: new Date().toISOString()
         };
-      } else {
-        updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
-        updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastDentalVisit`] = new Date().toISOString();
-      }
 
-      // Apply all updates
-      await update(ref(database), updates);
+        // Initialize or update registrationInfo
+        if (!patientData.registrationInfo) {
+            updates[`rhp/patients/${selectedPatient.id}/registrationInfo`] = {
+                lastVisit: new Date().toISOString(),
+                lastDentalVisit: new Date().toISOString()
+            };
+        } else {
+            updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastVisit`] = new Date().toISOString();
+            updates[`rhp/patients/${selectedPatient.id}/registrationInfo/lastDentalVisit`] = new Date().toISOString();
+        }
 
-      toast.success("Dental examination saved successfully");
-      handleClear();
+        // Apply all updates
+        await update(ref(database), updates);
+
+        toast.success("Dental examination saved successfully");
+        handleClear();
     } catch (error) {
-      console.error("Error saving dental examination:", error);
-      toast.error(error.message || "Failed to save dental examination");
+        console.error("Error saving dental examination:", error);
+        toast.error(error.message || "Failed to save dental examination");
     }
   }
 
