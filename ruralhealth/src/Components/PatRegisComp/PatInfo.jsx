@@ -439,9 +439,29 @@ Please confirm if the information above is correct.`;
         try {
             setIsUpdating(true);
             
+            // Get the correct patient ID
+            const patientId = selectedPatient.registrationInfo?.registrationNumber || selectedPatient.id;
+            console.log('Using patient ID:', patientId);
+            
+            if (!patientId) {
+                throw new Error('Patient ID not found');
+            }
+
+            // First, get the existing patient data to ensure we have the complete structure
+            const patientRef = ref(database, `rhp/patients/${patientId}`);
+            const snapshot = await get(patientRef);
+            
+            if (!snapshot.exists()) {
+                throw new Error('Patient not found in database');
+            }
+
+            const existingData = snapshot.val();
+            console.log('Existing patient data:', existingData);
+            
             // Structure the patient data according to the expected format
             const patientData = {
                 personalInfo: {
+                    ...existingData.personalInfo,
                     firstName: formData.firstName.trim(),
                     lastName: formData.lastName.trim(),
                     middleName: formData.middleName.trim(),
@@ -452,6 +472,7 @@ Please confirm if the information above is correct.`;
                     employmentStatus: formData.personalInfo.employmentStatus
                 },
                 address: {
+                    ...existingData.address,
                     street: formData.address.street.trim(),
                     barangay: formData.address.barangay,
                     municipality: formData.address.municipality.trim(),
@@ -459,29 +480,31 @@ Please confirm if the information above is correct.`;
                     zipcode: formData.address.zipcode
                 },
                 contactInfo: {
+                    ...existingData.contactInfo,
                     email: formData.contactInfo.email.trim(),
                     contactNumber: formData.contactInfo.phoneNumber.trim(),
                     phoneNumber: formData.contactInfo.phoneNumber.trim() // Keep both for compatibility
                 },
                 medicalInfo: {
+                    ...existingData.medicalInfo,
                     height: parseFloat(formData.medicalInfo.height) || null,
                     weight: parseFloat(formData.medicalInfo.weight) || null,
                     bmi: parseFloat(formData.medicalInfo.bmi) || null,
                     bloodType: formData.medicalInfo.bloodType
                 },
                 registrationInfo: {
-                    registrationDate: selectedPatient.registrationInfo?.registrationDate || new Date().toISOString(),
-                    registrationNumber: selectedPatient.registrationInfo?.registrationNumber,
-                    status: selectedPatient.registrationInfo?.status || 'active',
+                    ...existingData.registrationInfo,
                     lastUpdated: new Date().toISOString()
                 }
             };
 
             console.log('Updating patient data:', patientData);
-            const result = await updatePatient(selectedPatient.id, patientData);
+            
+            const result = await updatePatient(patientId, patientData);
+            console.log('Update result:', result);
 
             if (result.success) {
-                onRegister(selectedPatient.id);
+                onRegister(patientId);
                 // Clear form and validation errors
                 setFormData({
                     firstName: '',
