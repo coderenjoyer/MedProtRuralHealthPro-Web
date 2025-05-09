@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { addPatient } from '../../Firebase/patientOperations';
+import React, { useState, useEffect } from 'react';
+import { addPatient, updatePatient } from '../../Firebase/patientOperations';
+import { ref, get } from 'firebase/database';
+import { database } from '../../Firebase/firebase';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-function PatientInformation({ onRegister, onError }) {
+function PatientInformation({ onRegister, onError, selectedPatient }) {
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -35,6 +39,42 @@ function PatientInformation({ onRegister, onError }) {
     // Add validation states to track field-specific errors
     const [validationErrors, setValidationErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    // Load patient data when selectedPatient changes
+    useEffect(() => {
+        if (selectedPatient) {
+            setFormData({
+                firstName: selectedPatient.personalInfo?.firstName || '',
+                lastName: selectedPatient.personalInfo?.lastName || '',
+                middleName: selectedPatient.personalInfo?.middleName || '',
+                address: {
+                    street: selectedPatient.address?.street || '',
+                    barangay: selectedPatient.address?.barangay || '',
+                    municipality: selectedPatient.address?.municipality || '',
+                    province: selectedPatient.address?.province || '',
+                    zipcode: selectedPatient.address?.zipcode || ''
+                },
+                personalInfo: {
+                    birthdate: selectedPatient.personalInfo?.birthdate || '',
+                    gender: selectedPatient.personalInfo?.gender || '',
+                    age: selectedPatient.personalInfo?.age || '',
+                    civilStatus: selectedPatient.personalInfo?.civilStatus || '',
+                    employmentStatus: selectedPatient.personalInfo?.employmentStatus || ''
+                },
+                contactInfo: {
+                    email: selectedPatient.contactInfo?.email || '',
+                    phoneNumber: selectedPatient.contactInfo?.phoneNumber || ''
+                },
+                medicalInfo: {
+                    height: selectedPatient.medicalInfo?.height || '',
+                    weight: selectedPatient.medicalInfo?.weight || '',
+                    bmi: selectedPatient.medicalInfo?.bmi || '',
+                    bloodType: selectedPatient.medicalInfo?.bloodType || ''
+                }
+            });
+        }
+    }, [selectedPatient]);
 
     const validateForm = () => {
         // Reset validation errors
@@ -261,11 +301,44 @@ function PatientInformation({ onRegister, onError }) {
     };
 
     const handleSubmit = async () => {
-        if (isSubmitting) {
-            return; // Prevent multiple submissions
-        }
-        
         if (!validateForm()) {
+            return;
+        }
+
+        // Create a summary of the patient information for confirmation
+        const patientSummary = `
+Patient Information Summary:
+---------------------------
+Name: ${formData.lastName}, ${formData.firstName} ${formData.middleName}
+Birth Date: ${formData.personalInfo.birthdate}
+Gender: ${formData.personalInfo.gender}
+Age: ${formData.personalInfo.age}
+Civil Status: ${formData.personalInfo.civilStatus}
+Employment Status: ${formData.personalInfo.employmentStatus}
+
+Contact Information:
+------------------
+Phone: ${formData.contactInfo.phoneNumber}
+Email: ${formData.contactInfo.email}
+
+Address:
+--------
+${formData.address.street}
+${formData.address.barangay}
+${formData.address.municipality}, ${formData.address.province} ${formData.address.zipcode}
+
+Medical Information:
+------------------
+Height: ${formData.medicalInfo.height} cm
+Weight: ${formData.medicalInfo.weight} kg
+BMI: ${formData.medicalInfo.bmi}
+Blood Type: ${formData.medicalInfo.bloodType}
+
+Please confirm if the information above is correct.`;
+
+        // Show confirmation dialog
+        const isConfirmed = window.confirm(patientSummary);
+        if (!isConfirmed) {
             return;
         }
 
@@ -358,6 +431,123 @@ function PatientInformation({ onRegister, onError }) {
         }
     };
 
+    const handleUpdate = async () => {
+        if (!validateForm()) {
+            return;
+        }
+
+        try {
+            setIsUpdating(true);
+            
+            // Structure the patient data according to the expected format
+            const patientData = {
+                personalInfo: {
+                    firstName: formData.firstName.trim(),
+                    lastName: formData.lastName.trim(),
+                    middleName: formData.middleName.trim(),
+                    birthdate: formData.personalInfo.birthdate,
+                    gender: formData.personalInfo.gender,
+                    age: parseInt(formData.personalInfo.age),
+                    civilStatus: formData.personalInfo.civilStatus,
+                    employmentStatus: formData.personalInfo.employmentStatus
+                },
+                address: {
+                    street: formData.address.street.trim(),
+                    barangay: formData.address.barangay,
+                    municipality: formData.address.municipality.trim(),
+                    province: formData.address.province.trim(),
+                    zipcode: formData.address.zipcode
+                },
+                contactInfo: {
+                    email: formData.contactInfo.email.trim(),
+                    contactNumber: formData.contactInfo.phoneNumber.trim(),
+                    phoneNumber: formData.contactInfo.phoneNumber.trim() // Keep both for compatibility
+                },
+                medicalInfo: {
+                    height: parseFloat(formData.medicalInfo.height) || null,
+                    weight: parseFloat(formData.medicalInfo.weight) || null,
+                    bmi: parseFloat(formData.medicalInfo.bmi) || null,
+                    bloodType: formData.medicalInfo.bloodType
+                },
+                registrationInfo: {
+                    registrationDate: selectedPatient.registrationInfo?.registrationDate || new Date().toISOString(),
+                    registrationNumber: selectedPatient.registrationInfo?.registrationNumber,
+                    status: selectedPatient.registrationInfo?.status || 'active',
+                    lastUpdated: new Date().toISOString()
+                }
+            };
+
+            console.log('Updating patient data:', patientData);
+            const result = await updatePatient(selectedPatient.id, patientData);
+
+            if (result.success) {
+                onRegister(selectedPatient.id);
+                // Clear form and validation errors
+                setFormData({
+                    firstName: '',
+                    lastName: '',
+                    middleName: '',
+                    address: {
+                        street: '',
+                        barangay: '',
+                        municipality: '',
+                        province: '',
+                        zipcode: ''
+                    },
+                    personalInfo: {
+                        birthdate: '',
+                        gender: '',
+                        age: '',
+                        civilStatus: '',
+                        employmentStatus: ''
+                    },
+                    contactInfo: {
+                        email: '',
+                        phoneNumber: ''
+                    },
+                    medicalInfo: {
+                        height: '',
+                        weight: '',
+                        bmi: '',
+                        bloodType: ''
+                    }
+                });
+                setValidationErrors({});
+                toast.success('Patient information updated successfully!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+            } else {
+                toast.error(result.message || 'Failed to update patient information', {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+                onError(result.message || 'Failed to update patient information');
+            }
+        } catch (error) {
+            console.error('Update error:', error);
+            toast.error(`Error updating patient: ${error.message || 'Unknown error'}`, {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+            onError(`Error updating patient: ${error.message || 'Unknown error'}`);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     // Helper function to determine if a field has an error
     const hasError = (section, field) => {
         const errorKey = section ? `${section}.${field}` : field;
@@ -372,6 +562,18 @@ function PatientInformation({ onRegister, onError }) {
 
     return (
         <div className="patient-information">
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
             <div className="header-section">
                 <h2 className='patient-information-header'>Patient Information</h2>
             </div>
@@ -698,14 +900,30 @@ function PatientInformation({ onRegister, onError }) {
                 </div>
             </div>
             <div className="button-section">
-                <button 
-                    className="submit-btn" 
-                    onClick={handleSubmit}
-                    disabled={isSubmitting} 
-                    style={{ backgroundColor: '#007bff', color: '#ffffff', border: 'none' }}
-                >
-                    {isSubmitting ? 'Registering...' : 'Register Patient'}
-                </button>
+                {selectedPatient ? (
+                    <button 
+                        className="update-btn" 
+                        onClick={handleUpdate}
+                        disabled={isUpdating} 
+                        style={{ 
+                            backgroundColor: '#28a745', 
+                            color: '#ffffff', 
+                            border: 'none',
+                            marginRight: '10px'
+                        }}
+                    >
+                        {isUpdating ? 'Updating...' : 'Update Patient'}
+                    </button>
+                ) : (
+                    <button 
+                        className="submit-btn" 
+                        onClick={handleSubmit}
+                        disabled={isSubmitting} 
+                        style={{ backgroundColor: '#007bff', color: '#ffffff', border: 'none' }}
+                    >
+                        {isSubmitting ? 'Registering...' : 'Register Patient'}
+                    </button>
+                )}
             </div>
             
             <style jsx>{`
@@ -747,6 +965,35 @@ function PatientInformation({ onRegister, onError }) {
                 /* Firefox */
                 input[type="number"] {
                     -moz-appearance: textfield;
+                }
+
+                .button-section {
+                    display: flex;
+                    justify-content: flex-end;
+                    margin-top: 20px;
+                    padding: 20px;
+                    border-top: 1px solid #e0e0e0;
+                }
+
+                .update-btn, .submit-btn {
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    transition: background-color 0.3s;
+                }
+
+                .update-btn:hover {
+                    background-color: #218838 !important;
+                }
+
+                .submit-btn:hover {
+                    background-color: #0056b3 !important;
+                }
+
+                .update-btn:disabled, .submit-btn:disabled {
+                    background-color: #bdbdbd !important;
+                    cursor: not-allowed;
                 }
             `}</style>
         </div>

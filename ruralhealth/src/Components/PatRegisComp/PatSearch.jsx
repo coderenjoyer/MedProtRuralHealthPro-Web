@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getAllPatients } from '../../Firebase/patientOperations.js';
+import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
+import { database } from '../../Firebase/firebase';
 
-function PatientSearch() {
+function PatientSearch({ onPatientSelect }) {
     const [patients, setPatients] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
@@ -9,6 +11,7 @@ function PatientSearch() {
     const [isSearching, setIsSearching] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [dataLoadError, setDataLoadError] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
 
     useEffect(() => {
         fetchPatients();
@@ -80,17 +83,79 @@ function PatientSearch() {
         }
     };
 
-    const handleSearch = (event) => {
-        setSearchTerm(event.target.value);
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!searchTerm.trim()) {
+            setError('Please enter a search term');
+            return;
+        }
+
+        setIsSearching(true);
+        setError(null);
+
+        try {
+            // Search by patient ID
+            const patientRef = ref(database, 'rhp/patients');
+            const patientQuery = query(patientRef, orderByChild('patientId'), equalTo(searchTerm));
+            const snapshot = await get(patientQuery);
+
+            if (snapshot.exists()) {
+                const results = [];
+                snapshot.forEach((childSnapshot) => {
+                    results.push({
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                setSearchResults(results);
+            } else {
+                setSearchResults([]);
+                setError('No patient found with the given ID');
+            }
+        } catch (error) {
+            console.error('Error searching for patient:', error);
+            setError('Error searching for patient. Please try again.');
+        } finally {
+            setIsSearching(false);
+        }
     };
 
-    const executeSearch = () => {
-        setIsSearching(true);
-        // This is a client-side search, so just set the flag to show we're "searching"
-        // and then reset it after a short delay to simulate a search operation
-        setTimeout(() => {
-            setIsSearching(false);
-        }, 300);
+    const handleSelectPatient = (patient) => {
+        // Format the patient data to match the form structure
+        const formattedPatient = {
+            id: patient.id,
+            firstName: patient.personalInfo?.firstName || '',
+            lastName: patient.personalInfo?.lastName || '',
+            middleName: patient.personalInfo?.middleName || '',
+            address: {
+                street: patient.address?.street || '',
+                barangay: patient.address?.barangay || '',
+                municipality: patient.address?.municipality || '',
+                province: patient.address?.province || '',
+                zipcode: patient.address?.zipcode || ''
+            },
+            personalInfo: {
+                birthdate: patient.personalInfo?.birthdate || '',
+                gender: patient.personalInfo?.gender || '',
+                age: patient.personalInfo?.age || '',
+                civilStatus: patient.personalInfo?.civilStatus || '',
+                employmentStatus: patient.personalInfo?.employmentStatus || ''
+            },
+            contactInfo: {
+                email: patient.contactInfo?.email || '',
+                phoneNumber: patient.contactInfo?.contactNumber || ''
+            },
+            medicalInfo: {
+                height: patient.medicalInfo?.height || '',
+                weight: patient.medicalInfo?.weight || '',
+                bmi: patient.medicalInfo?.bmi || '',
+                bloodType: patient.medicalInfo?.bloodType || ''
+            }
+        };
+
+        onPatientSelect(formattedPatient);
+        setSearchResults([]);
+        setSearchTerm('');
     };
 
     const getFullName = (patient) => {
@@ -193,40 +258,153 @@ function PatientSearch() {
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 alignItems: 'center',
-                marginBottom: '20px'
+                marginBottom: '20px',
+                backgroundColor: '#ffffff',
+                padding: '20px',
+                borderRadius: '10px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
             }}>
-                <h2 style={{ margin: 0 }}>Patient Search</h2>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <input 
-                        type="text" 
-                        placeholder="Search by name or patient number..."
-                        value={searchTerm}
-                        onChange={handleSearch}
-                        onKeyPress={(e) => e.key === 'Enter' && executeSearch()}
-                        style={{
-                            padding: '8px 12px',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            width: '250px',
-                            backgroundColor: '#ffffff',
-                            color: '#000000'
-                        }}
-                    />
-                    <button 
-                        style={{
-                            padding: '8px 16px',
-                            backgroundColor: '#007bff',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            opacity: isSearching ? 0.7 : 1,
-                        }}
-                        onClick={executeSearch}
-                        disabled={isSearching}
-                    >
-                        {isSearching ? 'Searching...' : 'Search'}
-                    </button>
+                <h2 style={{ 
+                    margin: 0,
+                    color: '#2c3e50',
+                    fontSize: '1.5rem',
+                    fontWeight: '600'
+                }}>Patient Search</h2>
+                <div style={{ 
+                    display: 'flex', 
+                    gap: '10px',
+                    flex: 1,
+                    maxWidth: '500px',
+                    marginLeft: '20px'
+                }}>
+                    <form onSubmit={handleSearch} style={{ width: '100%' }}>
+                        <div style={{
+                            position: 'relative',
+                            width: '100%'
+                        }}>
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search by Patient ID..."
+                                disabled={isSearching}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 20px',
+                                    paddingLeft: '45px',
+                                    fontSize: '1rem',
+                                    border: '2px solid #e0e0e0',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#ffffff',
+                                    color: '#2c3e50',
+                                    transition: 'all 0.3s ease',
+                                    outline: 'none'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = '#007bff';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(0,123,255,0.1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e0e0e0';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            />
+                            <div style={{
+                                position: 'absolute',
+                                left: '15px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: '#6c757d'
+                            }}>
+                                <svg 
+                                    width="20" 
+                                    height="20" 
+                                    viewBox="0 0 24 24" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    strokeWidth="2" 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round"
+                                >
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </div>
+                            <button 
+                                type="submit" 
+                                disabled={isSearching}
+                                style={{
+                                    position: 'absolute',
+                                    right: '5px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    padding: '8px 16px',
+                                    backgroundColor: '#007bff',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '500',
+                                    transition: 'all 0.3s ease',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.backgroundColor = '#0056b3';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.backgroundColor = '#007bff';
+                                }}
+                            >
+                                {isSearching ? (
+                                    <>
+                                        <svg 
+                                            width="16" 
+                                            height="16" 
+                                            viewBox="0 0 24 24" 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            strokeWidth="2" 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round"
+                                            style={{
+                                                animation: 'spin 1s linear infinite'
+                                            }}
+                                        >
+                                            <line x1="12" y1="2" x2="12" y2="6"></line>
+                                            <line x1="12" y1="18" x2="12" y2="22"></line>
+                                            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                                            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                                            <line x1="2" y1="12" x2="6" y2="12"></line>
+                                            <line x1="18" y1="12" x2="22" y2="12"></line>
+                                            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                                            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                                        </svg>
+                                        Searching...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg 
+                                            width="16" 
+                                            height="16" 
+                                            viewBox="0 0 24 24" 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            strokeWidth="2" 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round"
+                                        >
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        Search
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -370,6 +548,19 @@ function PatientSearch() {
                                             >
                                                 View
                                             </button>
+                                            <button 
+                                                onClick={() => handleSelectPatient(patient)}
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    backgroundColor: '#007bff',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Select
+                                            </button>
                                             {!patient.dataComplete && (
                                                 <span style={{
                                                     fontSize: '12px',
@@ -498,41 +689,23 @@ function PatientSearch() {
             )}
             
             <style jsx>{`
-                input, select, textarea {
-                    background-color: #ffffff !important;
-                    color: #000000 !important;
-                    border-color: #ced4da !important;
+                @keyframes spin {
+                    from {
+                        transform: rotate(0deg);
+                    }
+                    to {
+                        transform: rotate(360deg);
+                    }
                 }
-                
-                input:focus, select:focus, textarea:focus {
-                    background-color: #ffffff !important;
-                    color: #000000 !important;
-                    border-color: #80bdff !important;
-                    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
-                }
-                
-                table {
-                    background-color: #ffffff !important;
-                    color: #000000 !important;
-                }
-                
-                th {
+
+                input:disabled {
                     background-color: #f8f9fa !important;
-                    color: #000000 !important;
+                    cursor: not-allowed;
                 }
-                
-                button {
-                    color: #ffffff !important;
-                }
-                
-                .view-btn {
-                    background-color: #28a745 !important;
-                    border-color: #28a745 !important;
-                }
-                
-                .retry-btn {
-                    background-color: #007bff !important;
-                    border-color: #007bff !important;
+
+                button:disabled {
+                    background-color: #6c757d !important;
+                    cursor: not-allowed;
                 }
             `}</style>
         </div>

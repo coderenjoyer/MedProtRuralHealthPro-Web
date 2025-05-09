@@ -6,6 +6,8 @@ import { database } from '../../Firebase/firebase';
 import { toast } from 'react-toastify';
 import 'react-calendar/dist/Calendar.css';
 import styled from 'styled-components';
+import emailjs from '@emailjs/browser';
+import { EMAIL_CONFIG } from '../../config/emailConfig';
 
 const SearchResultsContainer = styled.div`
     max-height: 300px;
@@ -179,7 +181,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         return () => unsubscribe();
     }, []);
 
-    // Handle patient selection
+    
     const handlePatientSelect = (patient) => {
         if (currentPatient?.id === patient.id) {
             setLocalSelectedPatient(null);
@@ -198,8 +200,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
             }
         }
     };
-
-    // Load patient data when selected
+ 
     useEffect(() => {
         const patient = localSelectedPatient || selectedPatient;
         if (patient) {
@@ -217,7 +218,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         }
     }, [localSelectedPatient, selectedPatient]);
 
-    // Load appointments from Firebase
+  
     useEffect(() => {
         const patient = localSelectedPatient || selectedPatient;
         if (patient) {
@@ -271,7 +272,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         try {
             const appointmentsRef = ref(database, `rhp/patients/${currentPatient.id}/appointments`);
             
-            // Create new appointment data
+           
             const appointmentData = {
                 patientId: currentPatient.id,
                 patientName: `${currentPatient.personalInfo.firstName} ${currentPatient.personalInfo.lastName}`,
@@ -282,21 +283,35 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                 status: 'pending'
             };
 
-            // Overwrite existing appointment or set to null if no appointment
+           
             await set(appointmentsRef, appointmentData);
 
-            // Update patient's last visit
+            
             const patientRef = ref(database, `rhp/patients/${currentPatient.id}`);
             await update(patientRef, {
                 'registrationInfo.lastVisit': new Date().toISOString(),
                 'registrationInfo.nextAppointment': `${formData.appointmentDate}T${formData.appointmentTime}`
             });
 
-            toast.success("Appointment scheduled successfully");
+            toast.success("Appointment scheduled successfully!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
             handleClear();
         } catch (error) {
             console.error("Error scheduling appointment:", error);
-            toast.error("Failed to schedule appointment");
+            toast.error("Failed to schedule appointment. Please try again.", {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
         }
     };
 
@@ -311,36 +326,109 @@ function Appointments({ selectedPatient, onPatientSelect }) {
 
     const sendCancellationEmail = async (appointment, patient) => {
         try {
-            // Create a cancellation record in Firebase
+            // Check if patient has email
+            if (!patient.contactInfo?.email) {
+                throw new Error('Patient does not have an email address');
+            }
+
+            // Create a cancellation record in Firebase for tracking
             const cancellationRef = ref(database, 'rhp/appointmentCancellations');
-            await push(cancellationRef, {
+            const cancellationData = {
                 patientId: patient.id,
-                patientEmail: patient.contactInfo?.email,
+                patientEmail: patient.contactInfo.email,
                 patientName: `${patient.personalInfo?.firstName} ${patient.personalInfo?.lastName}`,
                 appointmentDate: appointment.appointmentDate,
                 appointmentTime: appointment.appointmentTime,
                 description: appointment.description || 'No specific description provided',
                 cancelledAt: new Date().toISOString(),
-                status: 'pending'
+                status: 'pending' // This will trigger the Firebase Cloud Function
+            };
+
+            // Push the cancellation record to Firebase
+            const newCancellationRef = await push(cancellationRef, cancellationData);
+
+            // Set up a listener for the cancellation status
+            const unsubscribe = onValue(newCancellationRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    if (data.status === 'sent') {
+                        toast.success('Cancellation email sent successfully', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                        });
+                        unsubscribe(); // Remove the listener once email is sent
+                    } else if (data.status === 'failed') {
+                        toast.error(`Failed to send cancellation email: ${data.error || 'Unknown error'}`, {
+                            position: "top-right",
+                            autoClose: 5000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                        });
+                        unsubscribe(); // Remove the listener if email fails
+                    }
+                }
             });
 
-            console.log('Cancellation email scheduled successfully');
+            console.log('Cancellation email request sent successfully');
+            toast.info('Sending cancellation email...', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
         } catch (error) {
-            console.error('Error scheduling cancellation email:', error);
-            toast.error('Failed to schedule cancellation email');
+            console.error('Error sending cancellation email:', error);
+            toast.error(error.message || 'Failed to send cancellation email', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
         }
     };
 
     const handleCancelAppointment = async () => {
         try {
             const patient = localSelectedPatient || selectedPatient;
-            if (!patient) throw new Error("No patient selected");
+            if (!patient) {
+                toast.error("No patient selected", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+                return;
+            }
             
             // Get current appointment before cancelling
             const appointmentsRef = ref(database, `rhp/patients/${patient.id}/appointments`);
             const appointmentSnapshot = await get(appointmentsRef);
             const currentAppointment = appointmentSnapshot.val();
             
+            if (!currentAppointment) {
+                toast.error("No appointment found to cancel", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+                return;
+            }
+
             // Set appointments to null when cancelled
             await set(appointmentsRef, null);
             
@@ -355,10 +443,24 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                 await sendCancellationEmail(currentAppointment, patient);
             }
             
-            toast.success("Appointment cancelled successfully");
+            toast.success("Appointment cancelled successfully!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
         } catch (error) {
             console.error("Error cancelling appointment:", error);
-            toast.error("Failed to cancel appointment");
+            toast.error("Failed to cancel appointment. Please try again.", {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
         }
     };
 
@@ -547,7 +649,31 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                 </button>
                                 <button 
                                     className="btn confirm-btn" 
-                                    onClick={handleSubmit}
+                                    onClick={() => {
+                                        if (!currentPatient) {
+                                            toast.error("Please select a patient first", {
+                                                position: "top-right",
+                                                autoClose: 3000,
+                                                hideProgressBar: false,
+                                                closeOnClick: true,
+                                                pauseOnHover: true,
+                                                draggable: true,
+                                            });
+                                            return;
+                                        }
+                                        if (!formData.appointmentDate || !formData.appointmentTime) {
+                                            toast.error("Please select both date and time for the appointment", {
+                                                position: "top-right",
+                                                autoClose: 3000,
+                                                hideProgressBar: false,
+                                                closeOnClick: true,
+                                                pauseOnHover: true,
+                                                draggable: true,
+                                            });
+                                            return;
+                                        }
+                                        handleSubmit();
+                                    }}
                                     disabled={!currentPatient}
                                     style={{ color: '#000000' }}
                                 >

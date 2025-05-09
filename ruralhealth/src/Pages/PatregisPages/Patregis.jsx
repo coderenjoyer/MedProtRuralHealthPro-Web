@@ -45,7 +45,7 @@ function Main() {
   const renderContent = () => {
     switch (selectedMenu) {
       case 'register':
-        return <PatientRegistry />;
+        return <PatientRegistry onCollapse={handleSidebarCollapse} />;
       case 'inventory':
         return <ManageInventory />;
       case 'appointments':

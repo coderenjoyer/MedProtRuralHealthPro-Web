@@ -20,6 +20,8 @@ import {
 } from 'chart.js';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
+import { ref, onValue } from 'firebase/database';
+import { database } from '../../Firebase/firebase';
 
 // Register ChartJS components
 ChartJS.register(
@@ -288,6 +290,57 @@ const AppointmentButton = styled(motion.button)`
   }
 `;
 
+const BARANGAYS = [
+  "Poblacion", "Compostela", "Legaspi", "Sta. Filomena", "Montpeller",
+  "Madridejos", "Lepanto", "Valencia", "Guadalupe"
+];
+
+function BarangayStats() {
+  const [counts, setCounts] = useState({});
+  const [otherCount, setOtherCount] = useState(0);
+
+  useEffect(() => {
+    const patientsRef = ref(database, "rhp/patients");
+    onValue(patientsRef, (snapshot) => {
+      const data = snapshot.val();
+      const tempCounts = {};
+      let tempOther = 0;
+      if (data) {
+        Object.values(data).forEach((patient) => {
+          const barangay = patient.address?.barangay?.trim() || "Other";
+          if (BARANGAYS.includes(barangay)) {
+            tempCounts[barangay] = (tempCounts[barangay] || 0) + 1;
+          } else {
+            tempOther += 1;
+          }
+        });
+      }
+      const finalCounts = {};
+      BARANGAYS.forEach(b => finalCounts[b] = tempCounts[b] || 0);
+      setCounts(finalCounts);
+      setOtherCount(tempOther);
+    });
+  }, []);
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <h2 style={{ color: '#095D7E', fontWeight: 600, marginBottom: 16 }}>Patient Registered From Different Barangays:</h2>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+        {BARANGAYS.map(barangay => (
+          <div key={barangay} style={{ minWidth: 120, background: "#f8fafc", borderRadius: 8, padding: 16 }}>
+            <div style={{ fontWeight: 600, color: '#095D7E' }}>{barangay}</div>
+            <div style={{ fontSize: 32, color: '#095D7E' }}>{counts[barangay]}</div>
+          </div>
+        ))}
+        <div style={{ minWidth: 120, background: "#f8fafc", borderRadius: 8, padding: 16 }}>
+          <div style={{ fontWeight: 600, color: '#095D7E' }}>Other</div>
+          <div style={{ fontSize: 32, color: '#095D7E' }}>{otherCount}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [patientStats, setPatientStats] = useState({
@@ -323,106 +376,103 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    const fetchPatientStats = async () => {
+    const patientsRef = ref(database, 'rhp/patients');
+    const unsubscribe = onValue(patientsRef, (snapshot) => {
       try {
-        const result = await getAllPatients()
-        if (result.success) {
-          console.log('Fetched patient data:', result.data)
+        const data = snapshot.val();
+        console.log('Real-time patient data update:', data);
+        
+        // Initialize counts for all barangays
+        const barangayCounts = BARANGAY_LIST.reduce((acc, brgy) => {
+          acc[brgy] = 0;
+          return acc;
+        }, {});
+
+        // Initialize monthly counts for registrations and visits
+        const monthlyRegistrations = Array(12).fill(0);
+        const monthlyVisits = Array(12).fill(0);
+        const currentYear = new Date().getFullYear();
+
+        // Process patient data
+        Object.entries(data || {}).forEach(([patientId, patient]) => {
+          console.log(`Processing patient ${patientId}:`, patient);
           
-          // Initialize counts for all barangays
-          const barangayCounts = BARANGAY_LIST.reduce((acc, brgy) => {
-            acc[brgy] = 0
-            return acc
-          }, {})
-
-          // Initialize monthly counts for registrations and visits
-          const monthlyRegistrations = Array(12).fill(0)
-          const monthlyVisits = Array(12).fill(0)
-          const currentYear = new Date().getFullYear()
-
-          // Process patient data
-          Object.values(result.data || {}).forEach(patient => {
-            // Process barangay data
-            const barangay = patient.contactInfo?.address?.barangay
-            if (barangay && barangay !== '') {
-              if (BARANGAY_LIST.includes(barangay)) {
-                barangayCounts[barangay] = (barangayCounts[barangay] || 0) + 1
-              } else {
-                barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1
-              }
+          // Process barangay data
+          const barangay = patient.contactInfo?.address?.barangay;
+          if (barangay && barangay !== '') {
+            if (BARANGAY_LIST.includes(barangay)) {
+              barangayCounts[barangay] = (barangayCounts[barangay] || 0) + 1;
             } else {
-              barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1
+              barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1;
             }
+          } else {
+            barangayCounts['Other'] = (barangayCounts['Other'] || 0) + 1;
+          }
 
-            // Process registration date
-            try {
-              if (patient.registrationInfo?.registrationDate) {
-                const regDate = new Date(patient.registrationInfo.registrationDate)
-                if (!isNaN(regDate.getTime())) {  // Check if date is valid
-                  if (regDate.getFullYear() === currentYear) {
-                    monthlyRegistrations[regDate.getMonth()]++
-                  }
+          // Process registration date
+          try {
+            if (patient.registrationInfo?.registrationDate) {
+              const regDate = new Date(patient.registrationInfo.registrationDate);
+              console.log(`Patient ${patientId} registration date:`, regDate);
+              if (!isNaN(regDate.getTime())) {  // Check if date is valid
+                if (regDate.getFullYear() === currentYear) {
+                  monthlyRegistrations[regDate.getMonth()]++;
+                  console.log(`Incrementing registration count for month ${regDate.getMonth() + 1} (${regDate.toLocaleString()})`);
                 }
               }
-            } catch (error) {
-              console.error('Error processing registration date for patient:', patient.id, error)
             }
+          } catch (error) {
+            console.error(`Error processing registration date for patient ${patientId}:`, error);
+          }
 
-            // Process visits
-            try {
-              if (patient.patientVisits?.visits) {
-                Object.values(patient.patientVisits.visits).forEach(visit => {
-                  const visitDate = new Date(visit.timestamp)
-                  if (!isNaN(visitDate.getTime()) && visitDate.getFullYear() === currentYear) {
-                    monthlyVisits[visitDate.getMonth()]++
-                  }
-                })
+          // Process last visit date
+          try {
+            if (patient.registrationInfo?.lastVisit) {
+              const visitDate = new Date(patient.registrationInfo.lastVisit);
+              console.log(`Patient ${patientId} last visit date:`, visitDate);
+              if (!isNaN(visitDate.getTime())) {  // Check if date is valid
+                if (visitDate.getFullYear() === currentYear) {
+                  monthlyVisits[visitDate.getMonth()]++;
+                  console.log(`Incrementing visit count for month ${visitDate.getMonth() + 1} (${visitDate.toLocaleString()})`);
+                }
               }
-            } catch (error) {
-              console.error('Error processing visits for patient:', patient.id, error)
             }
-          })
+          } catch (error) {
+            console.error(`Error processing last visit date for patient ${patientId}:`, error);
+          }
+        });
 
-          // Convert to array format for display
-          const barangayStats = BARANGAY_LIST.map(name => ({
-            name,
-            count: barangayCounts[name] || 0
-          }))
+        console.log('Final monthly registrations:', monthlyRegistrations);
+        console.log('Final monthly visits:', monthlyVisits);
+        console.log('Final barangay counts:', barangayCounts);
 
-          // Prepare monthly stats
-          const monthNames = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-          ]
-          const monthlyStats = monthNames.map((name, index) => ({
-            name,
-            registrations: monthlyRegistrations[index],
-            visits: monthlyVisits[index]
-          }))
-
-          setPatientStats({
-            totalPatients: Object.keys(result.data || {}).length,
-            barangayStats: barangayStats,
-            monthlyStats: monthlyStats
-          })
-        }
+        // Update state with processed data
+        setPatientStats({
+          totalPatients: Object.keys(data || {}).length,
+          barangayStats: barangayCounts,
+          monthlyStats: {
+            registrations: monthlyRegistrations,
+            visits: monthlyVisits
+          }
+        });
+        setLoading(false);
       } catch (error) {
-        console.error('Error fetching patient statistics:', error)
-      } finally {
-        setLoading(false)
+        console.error('Error processing patient data:', error);
+        setLoading(false);
       }
-    }
+    });
 
-    fetchPatientStats()
-  }, [])
+    // Cleanup subscription on component unmount
+    return () => unsubscribe();
+  }, []);
 
   // Bar chart data configuration
   const barChartData = {
-    labels: patientStats.barangayStats.map(stat => stat.name),
+    labels: BARANGAY_LIST,
     datasets: [
       {
         label: 'Number of Patients',
-        data: patientStats.barangayStats.map(stat => stat.count),
+        data: BARANGAY_LIST.map(brgy => patientStats.barangayStats[brgy] || 0),
         backgroundColor: '#095D7E',
         borderColor: '#095D7E',
         borderWidth: 1,
@@ -432,13 +482,18 @@ export default function Dashboard() {
     ],
   };
 
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
   // Line chart data configuration for visits
   const visitsChartData = {
-    labels: patientStats.monthlyStats.map(stat => stat.name),
+    labels: monthNames,
     datasets: [
       {
         label: 'Patient Visits',
-        data: patientStats.monthlyStats.map(stat => stat.visits),
+        data: patientStats.monthlyStats?.visits || Array(12).fill(0),
         borderColor: '#4CAF50',
         backgroundColor: 'rgba(76, 175, 80, 0.1)',
         borderWidth: 2,
@@ -455,11 +510,11 @@ export default function Dashboard() {
 
   // Update the existing line chart data for registrations
   const lineChartData = {
-    labels: patientStats.monthlyStats.map(stat => stat.name),
+    labels: monthNames,
     datasets: [
       {
         label: 'Patient Registrations',
-        data: patientStats.monthlyStats.map(stat => stat.registrations),
+        data: patientStats.monthlyStats?.registrations || Array(12).fill(0),
         borderColor: '#4FC3F7',
         backgroundColor: 'rgba(79, 195, 247, 0.1)',
         borderWidth: 2,
@@ -593,6 +648,8 @@ export default function Dashboard() {
           <p>{loading ? "Loading..." : patientStats.totalPatients}</p>
         </TotalPatients>
 
+        <BarangayStats />
+
         <GraphRow>
           <GraphSection
             initial={{ opacity: 0, y: 20 }}
@@ -679,7 +736,7 @@ export default function Dashboard() {
               Loading statistics...
             </LoadingMessage>
           ) : (
-            patientStats.barangayStats.map((stat, index) => (
+            BARANGAY_LIST.map((brgy, index) => (
               <StatCard 
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -687,8 +744,8 @@ export default function Dashboard() {
                 transition={{ duration: 0.3, delay: 0.1 * index }}
                 whileHover={{ scale: 1.02 }}
               >
-                <h3>{stat.name}</h3>
-                <p>{stat.count}</p>
+                <h3>{brgy}</h3>
+                <p>{patientStats.barangayStats[brgy] || 0}</p>
               </StatCard>
             ))
           )}

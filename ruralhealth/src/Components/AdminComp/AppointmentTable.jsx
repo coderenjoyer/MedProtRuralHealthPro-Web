@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { useState, useEffect } from "react";
-import { ref, onValue, remove, update } from 'firebase/database';
+import { ref, onValue, remove, update, get, push } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
@@ -89,119 +89,275 @@ const EmptyMessage = styled.div`
   font-style: italic;
 `;
 
+const SearchInput = styled.input`
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 300px;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: #095D7E;
+    box-shadow: 0 0 0 2px rgba(9, 93, 126, 0.1);
+  }
+`;
+
+const FilterSelect = styled.select`
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  margin-left: 10px;
+  font-size: 14px;
+  background-color: white;
+  color: #000000;
+
+  &:focus {
+    outline: none;
+    border-color: #095D7E;
+    box-shadow: 0 0 0 2px rgba(9, 93, 126, 0.1);
+  }
+
+  option {
+    color: #000000;
+  }
+`;
+
+const FilterContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 10px;
+`;
+
 export default function AppointmentTable() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
-    const appointmentsRef = ref(database, 'rhp/appointments');
-    
-    const unsubscribe = onValue(appointmentsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        // Convert Firebase object to array and add the Firebase key as id
-        const appointmentsArray = Object.entries(data).map(([key, value]) => ({
-          id: key,
-          ...value
-        }));
-        // Sort appointments by date
-        appointmentsArray.sort((a, b) => new Date(a.date) - new Date(b.date));
-        setAppointments(appointmentsArray);
-      } else {
-        setAppointments([]);
-      }
-      setLoading(false);
-    });
+    const fetchAllAppointments = async () => {
+      try {
+        // Get all patients
+        const patientsRef = ref(database, 'rhp/patients');
+        const patientsSnapshot = await get(patientsRef);
+        const patientsData = patientsSnapshot.val();
 
-    return () => unsubscribe();
+        if (!patientsData) {
+          setAppointments([]);
+          setLoading(false);
+          return;
+        }
+
+        // Collect all appointments from each patient
+        const allAppointments = [];
+        for (const [patientId, patient] of Object.entries(patientsData)) {
+          if (patient.appointments) {
+            const appointment = {
+              id: patientId,
+              patientId,
+              patientName: `${patient.personalInfo?.firstName || ''} ${patient.personalInfo?.lastName || ''}`,
+              patientEmail: patient.contactInfo?.email || 'N/A',
+              patientPhone: patient.contactInfo?.phoneNumber || 'N/A',
+              appointmentDate: patient.appointments.appointmentDate,
+              appointmentTime: patient.appointments.appointmentTime,
+              description: patient.appointments.description || 'No description',
+              status: patient.appointments.status || 'pending',
+              createdAt: patient.appointments.createdAt,
+              cancelledAt: patient.appointments.cancelledAt
+            };
+            allAppointments.push(appointment);
+          }
+        }
+
+        // Sort appointments by date
+        allAppointments.sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
+        setAppointments(allAppointments);
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+        toast.error('Failed to load appointments');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllAppointments();
   }, []);
 
   const handleCancelAppointment = async (appointmentId) => {
     if (window.confirm('Are you sure you want to cancel this appointment?')) {
-      try {
-        const appointmentRef = ref(database, `rhp/appointments/${appointmentId}`);
-        await update(appointmentRef, {
-          status: 'cancelled',
-          cancelledAt: new Date().toISOString()
-        });
-        toast.success('Appointment cancelled successfully');
-      } catch (error) {
-        console.error('Error cancelling appointment:', error);
-        toast.error('Failed to cancel appointment');
-      }
+        try {
+            const appointmentRef = ref(database, `rhp/patients/${appointmentId}/appointments`);
+            await update(appointmentRef, {
+                status: 'cancelled',
+                cancelledAt: new Date().toISOString()
+            });
+            toast.success('Appointment cancelled successfully', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+            // Refresh the page after successful cancellation
+            window.location.reload();
+        } catch (error) {
+            console.error('Error cancelling appointment:', error);
+            toast.error('Failed to cancel appointment', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+        }
     }
   };
 
   const handleDeleteAppointment = async (appointmentId) => {
     if (window.confirm('Are you sure you want to delete this appointment? This action cannot be undone.')) {
-      try {
-        const appointmentRef = ref(database, `rhp/appointments/${appointmentId}`);
-        await remove(appointmentRef);
-        toast.success('Appointment deleted successfully');
-      } catch (error) {
-        console.error('Error deleting appointment:', error);
-        toast.error('Failed to delete appointment');
-      }
+        try {
+            // Delete the appointment
+            const appointmentRef = ref(database, `rhp/patients/${appointmentId}/appointments`);
+            await remove(appointmentRef);
+
+            // Update patient's next appointment to null
+            const patientRef = ref(database, `rhp/patients/${appointmentId}`);
+            await update(patientRef, {
+                'registrationInfo.nextAppointment': null
+            });
+
+            // Create a deletion record for tracking
+            const deletionRef = ref(database, 'rhp/appointmentDeletions');
+            await push(deletionRef, {
+                patientId: appointmentId,
+                deletedAt: new Date().toISOString(),
+                deletedBy: 'admin' // You can replace this with actual admin ID if available
+            });
+
+            toast.success('Appointment deleted successfully', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+            // Refresh the page after successful deletion
+            window.location.reload();
+        } catch (error) {
+            console.error('Error deleting appointment:', error);
+            toast.error('Failed to delete appointment. Please try again.', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+        }
     }
   };
+
+  const filteredAppointments = appointments.filter(appointment => {
+    const matchesSearch = 
+      appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.patientEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.patientPhone.includes(searchTerm);
+    
+    const matchesStatus = statusFilter === 'all' || appointment.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   if (loading) {
     return <LoadingMessage>Loading appointments...</LoadingMessage>;
   }
 
-  if (appointments.length === 0) {
-    return <EmptyMessage>No appointments found</EmptyMessage>;
-  }
-
   return (
-    <TableWrapper>
-      <Table>
-        <thead>
-          <tr>
-            <Th>Patient Name</Th>
-            <Th>Date</Th>
-            <Th>Time</Th>
-            <Th>Service</Th>
-            <Th>Status</Th>
-            <Th>Actions</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {appointments.map((appointment) => (
-            <Tr key={appointment.id}>
-              <Td>{appointment.patientName}</Td>
-              <Td>{new Date(appointment.date).toLocaleDateString()}</Td>
-              <Td>{appointment.time}</Td>
-              <Td>{appointment.service}</Td>
-              <Td>
-                <StatusBadge $status={appointment.status}>
-                  {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                </StatusBadge>
-              </Td>
-              <Td>
-                {appointment.status === 'pending' && (
-                  <ActionButton
-                    $type="cancel"
-                    onClick={() => handleCancelAppointment(appointment.id)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Cancel
-                  </ActionButton>
-                )}
-                <ActionButton
-                  $type="delete"
-                  onClick={() => handleDeleteAppointment(appointment.id)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Delete
-                </ActionButton>
-              </Td>
-            </Tr>
-          ))}
-        </tbody>
-      </Table>
-    </TableWrapper>
+    <div>
+      <FilterContainer>
+        <SearchInput
+          type="text"
+          placeholder="Search by name, email, or phone..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <FilterSelect
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="completed">Completed</option>
+        </FilterSelect>
+      </FilterContainer>
+
+      {filteredAppointments.length === 0 ? (
+        <EmptyMessage>No appointments found</EmptyMessage>
+      ) : (
+        <TableWrapper>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Patient Name</Th>
+                <Th>Contact Info</Th>
+                <Th>Date</Th>
+                <Th>Time</Th>
+                <Th>Description</Th>
+                <Th>Status</Th>
+                <Th>Actions</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAppointments.map((appointment) => (
+                <Tr key={appointment.id}>
+                  <Td>{appointment.patientName}</Td>
+                  <Td>
+                    <div>Email: {appointment.patientEmail}</div>
+                    <div>Phone: {appointment.patientPhone}</div>
+                  </Td>
+                  <Td>{new Date(appointment.appointmentDate).toLocaleDateString()}</Td>
+                  <Td>{appointment.appointmentTime}</Td>
+                  <Td>{appointment.description}</Td>
+                  <Td>
+                    <StatusBadge $status={appointment.status}>
+                      {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                    </StatusBadge>
+                  </Td>
+                  <Td>
+                    {appointment.status === 'pending' && (
+                      <ActionButton
+                        $type="cancel"
+                        onClick={() => handleCancelAppointment(appointment.id)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Cancel
+                      </ActionButton>
+                    )}
+                    <ActionButton
+                      $type="delete"
+                      onClick={() => handleDeleteAppointment(appointment.id)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Delete
+                    </ActionButton>
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableWrapper>
+      )}
+    </div>
   );
 } 

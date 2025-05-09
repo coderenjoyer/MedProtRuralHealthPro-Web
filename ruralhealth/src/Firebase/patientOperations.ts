@@ -86,14 +86,38 @@ export const updatePatient = async (patientId: string, patientData: Partial<Pati
       };
     }
 
-    // Update patient data
-    await update(patientRef, {
+    // Get existing patient data
+    const existingData = snapshot.val();
+
+    // Merge the new data with existing data, preserving any fields not included in the update
+    const updatedData = {
+      ...existingData,
       ...patientData,
+      personalInfo: {
+        ...existingData.personalInfo,
+        ...patientData.personalInfo
+      },
+      address: {
+        ...existingData.address,
+        ...patientData.address
+      },
+      contactInfo: {
+        ...existingData.contactInfo,
+        ...patientData.contactInfo
+      },
+      medicalInfo: {
+        ...existingData.medicalInfo,
+        ...patientData.medicalInfo
+      },
       registrationInfo: {
+        ...existingData.registrationInfo,
         ...patientData.registrationInfo,
         lastUpdated: new Date().toISOString()
       }
-    });
+    };
+
+    // Update patient data
+    await update(patientRef, updatedData);
 
     return {
       success: true,
