@@ -210,6 +210,23 @@ function ManageInventory() {
                 return;
             }
 
+            // Create confirmation message
+            const confirmationMessage = `
+Please confirm the following medicine details:
+
+Medicine Name: ${formData.name}
+Brand: ${formData.brand}
+Description: ${formData.description}
+Quantity: ${formData.quantity}
+Expiry Date: ${formData.expiryDate}
+
+Do you want to ${editingId ? 'update' : 'add'} this medicine?`;
+
+            // Show confirmation dialog
+            if (!window.confirm(confirmationMessage)) {
+                return;
+            }
+
             if (editingId) {
                 // Update existing medicine
                 const medicineRef = ref(database, `rhp/medicines/${editingId}`);
