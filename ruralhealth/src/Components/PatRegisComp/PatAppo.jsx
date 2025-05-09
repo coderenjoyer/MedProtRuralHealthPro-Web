@@ -255,17 +255,24 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         }));
     };
 
-    const handleSubmit = async () => {
-        const currentPatient = localSelectedPatient || selectedPatient;
-        console.log('Current patient in handleSubmit:', currentPatient);
+                const handleSubmit = async () => {
+          const currentPatient = localSelectedPatient || selectedPatient;
         
-        if (!currentPatient) {
+          // Confirmation dialog
+          const confirmSchedule = window.confirm("Are you sure you want to schedule this appointment?");
+          if (!confirmSchedule) {
+            return; // Exit if the user cancels
+          }
+        
+          // Error handling for missing patient
+          if (!currentPatient) {
             toast.error("Please select a patient first");
             return;
-        }
-
-        if (!formData.appointmentDate || !formData.appointmentTime) {
-            toast.error("Please select both date and time for the appointment");
+          }
+        
+          // Error handling for missing required fields
+          if (!formData.appointmentDate || !formData.appointmentTime || !formData.description) {
+            toast.error("Please fill out all required fields (date, time, and description)");
             return;
         }
 
@@ -293,6 +300,9 @@ Do you want to proceed with scheduling this appointment?`;
         }
 
         try {
+          }
+        
+          try {
             const appointmentsRef = ref(database, `rhp/patients/${currentPatient.id}/appointments`);
             const appointmentData = {
                 patientId: currentPatient.id,
@@ -313,6 +323,20 @@ Do you want to proceed with scheduling this appointment?`;
             await set(appointmentsRef, appointmentData);
             console.log('Appointment set in database');
             
+            const newAppointmentRef = push(appointmentsRef);
+        
+            // Save the appointment to Firebase
+            await update(newAppointmentRef, {
+              patientId: currentPatient.id,
+              patientName: `${currentPatient.personalInfo.firstName} ${currentPatient.personalInfo.lastName}`,
+              appointmentDate: formData.appointmentDate,
+              appointmentTime: formData.appointmentTime,
+              description: formData.description,
+              createdAt: new Date().toISOString(),
+              status: 'pending',
+            });
+        
+            // Update the patient's last visit
             const patientRef = ref(database, `rhp/patients/${currentPatient.id}`);
             await update(patientRef, {
                 'registrationInfo.lastVisit': new Date().toISOString(),
@@ -345,6 +369,16 @@ Do you want to proceed with scheduling this appointment?`;
             });
         }
     };
+              'registrationInfo.lastVisit': new Date().toISOString(),
+            });
+        
+            toast.success("Appointment scheduled successfully");
+            handleClear(); // Clear the form after successful submission
+          } catch (error) {
+            console.error("Error scheduling appointment:", error);
+            toast.error("Failed to schedule appointment. Please try again.");
+          }
+        };
 
     const handleClear = () => {
         setFormData(prev => ({
