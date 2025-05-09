@@ -271,13 +271,13 @@ function Appointments({ selectedPatient, onPatientSelect }) {
 
         try {
             const appointmentsRef = ref(database, `rhp/patients/${currentPatient.id}/appointments`);
-            
             const appointmentData = {
                 patientId: currentPatient.id,
                 patientNumber: currentPatient.registrationInfo?.registrationNumber || 'N/A',
                 patientName: `${currentPatient.personalInfo.firstName} ${currentPatient.personalInfo.lastName}`,
                 contactInfo: {
-                    phoneNumber: currentPatient.contactInfo?.phoneNumber || 'N/A',
+                    phoneNumber: currentPatient.contactInfo?.phoneNumber || currentPatient.contactInfo?.contactNumber || 'N/A',
+                    contactNumber: currentPatient.contactInfo?.contactNumber || currentPatient.contactInfo?.phoneNumber || 'N/A',
                     email: currentPatient.contactInfo?.email || 'N/A'
                 },
                 appointmentDate: formData.appointmentDate,
@@ -288,12 +288,14 @@ function Appointments({ selectedPatient, onPatientSelect }) {
             };
 
             await set(appointmentsRef, appointmentData);
+            console.log('Appointment set in database');
             
             const patientRef = ref(database, `rhp/patients/${currentPatient.id}`);
             await update(patientRef, {
                 'registrationInfo.lastVisit': new Date().toISOString(),
                 'registrationInfo.nextAppointment': `${formData.appointmentDate}T${formData.appointmentTime}`
             });
+            console.log('Patient info updated in database');
 
             toast.success("Appointment scheduled successfully!", {
                 position: "top-right",
@@ -303,9 +305,13 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                 pauseOnHover: true,
                 draggable: true,
             });
-            handleClear();
+            try {
+                handleClear();
+            } catch (clearError) {
+                console.error('Error in handleClear:', clearError);
+            }
         } catch (error) {
-            console.error("Error scheduling appointment:", error);
+            console.error("Error in handleSubmit:", error);
             toast.error("Failed to schedule appointment. Please try again.", {
                 position: "top-right",
                 autoClose: 5000,
@@ -749,7 +755,6 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                     <th style={{ color: '#000000' }}>Date</th>
                                     <th style={{ color: '#000000' }}>Time</th>
                                     <th style={{ color: '#000000' }}>Patient Name</th>
-                                    <th style={{ color: '#000000' }}>Contact</th>
                                     <th style={{ color: '#000000' }}>Description</th>
                                     <th style={{ color: '#000000' }}>Status</th>
                                     <th style={{ color: '#000000' }}>Actions</th>
@@ -762,14 +767,6 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                         <td style={{ color: '#000000' }}>{formatDate(appointment.appointmentDate)}</td>
                                         <td style={{ color: '#000000' }}>{formatTime(appointment.appointmentTime)}</td>
                                         <td style={{ color: '#000000' }}>{appointment.patientName || 'N/A'}</td>
-                                        <td style={{ color: '#000000' }}>
-                                            {appointment.contactInfo?.phoneNumber || 'N/A'}
-                                            {appointment.contactInfo?.email && (
-                                                <div style={{ fontSize: '0.9em', color: '#666' }}>
-                                                    {appointment.contactInfo.email}
-                                                </div>
-                                            )}
-                                        </td>
                                         <td style={{ color: '#000000' }}>{appointment.description || 'No description'}</td>
                                         <td>
                                             <span style={{ 
@@ -806,7 +803,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                 ))}
                                 {getUpcomingAppointments().length === 0 && (
                                     <tr>
-                                        <td colSpan="8" style={{ textAlign: 'center', color: '#000000' }}>
+                                        <td colSpan="7" style={{ textAlign: 'center', color: '#000000' }}>
                                             No upcoming appointments found
                                         </td>
                                     </tr>
