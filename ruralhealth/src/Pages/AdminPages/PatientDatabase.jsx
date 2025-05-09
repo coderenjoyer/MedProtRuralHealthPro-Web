@@ -6,6 +6,8 @@ import { FaBars, FaSearch } from "react-icons/fa"
 import { useState, useEffect } from "react"
 import { ref, onValue, remove } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const PageContainer = styled.div`
   display: flex;
@@ -292,6 +294,26 @@ const DeleteButton = styled.button`
   }
 `
 
+const SelectButton = styled.button`
+  background-color: ${props => props.$isSelected ? '#28a745' : '#095D7E'};
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: ${props => props.$isSelected ? '#218838' : '#074a63'};
+  }
+
+  &:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+`;
+
 export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setActivePage, activePage }) {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [patients, setPatients] = useState([]);
@@ -307,10 +329,13 @@ export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setAc
         // Convert Firebase object to array and add the Firebase key as id
         const patientsArray = Object.entries(data).map(([key, value]) => ({
           id: key,
-          ...value.personalInfo,
-          ...value.medicalInfo,
-          ...value.contactInfo,
-          ...value.address,
+          personalInfo: value.personalInfo || {},
+          medicalInfo: value.medicalInfo || {},
+          contactInfo: value.contactInfo || {},
+          address: value.address || {},
+          registrationInfo: value.registrationInfo || {},
+          dentalHistory: value.dentalHistory || {},
+          patientVisits: value.patientVisits || {}
         }));
         setPatients(patientsArray);
       } else {
@@ -329,16 +354,29 @@ export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setAc
         const patientRef = ref(database, `rhp/patients/${patientId}`);
         await remove(patientRef);
         setSelectedPatient(null);
+        toast.success('Patient deleted successfully');
       } catch (error) {
         console.error('Error deleting patient:', error);
-        alert('Failed to delete patient');
+        toast.error('Failed to delete patient');
       }
     }
   };
 
+  const handleSelectPatient = (patient) => {
+    setSelectedPatient(patient);
+    toast.success(`Selected patient: ${patient.personalInfo.firstName} ${patient.personalInfo.lastName}`, {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  };
+
   const filteredPatients = patients.filter(patient => 
-    patient.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.personalInfo?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.personalInfo?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -380,6 +418,7 @@ export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setAc
                         <Th>Gender</Th>
                         <Th>Height</Th>
                         <Th>Weight</Th>
+                        <Th>Action</Th>
                       </tr>
                     </thead>
                     <tbody>
@@ -387,15 +426,22 @@ export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setAc
                         <Tr 
                           key={patient.id} 
                           className={selectedPatient?.id === patient.id ? "selected" : ""}
-                          onClick={() => setSelectedPatient(patient)}
                         >
                           <Td>{patient.id}</Td>
-                          <Td>{patient.lastName}</Td>
-                          <Td>{patient.firstName}</Td>
-                          <Td>{patient.dateOfBirth}</Td>
-                          <Td>{patient.gender}</Td>
-                          <Td>{patient.height}</Td>
-                          <Td>{patient.weight}</Td>
+                          <Td>{patient.personalInfo?.lastName || '—'}</Td>
+                          <Td>{patient.personalInfo?.firstName || '—'}</Td>
+                          <Td>{patient.personalInfo?.birthdate || '—'}</Td>
+                          <Td>{patient.personalInfo?.gender || '—'}</Td>
+                          <Td>{patient.medicalInfo?.height ? `${patient.medicalInfo.height} cm` : '—'}</Td>
+                          <Td>{patient.medicalInfo?.weight ? `${patient.medicalInfo.weight} kg` : '—'}</Td>
+                          <Td>
+                            <SelectButton
+                              $isSelected={selectedPatient?.id === patient.id}
+                              onClick={() => handleSelectPatient(patient)}
+                            >
+                              {selectedPatient?.id === patient.id ? 'Selected' : 'Select'}
+                            </SelectButton>
+                          </Td>
                         </Tr>
                       ))}
                     </tbody>
@@ -414,69 +460,66 @@ export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setAc
               <ProfileRow>
                 <ProfileField>
                   <label>Last Name</label>
-                  <div className="value">{selectedPatient?.lastName || '—'}</div>
+                  <div className="value">{selectedPatient?.personalInfo?.lastName || '—'}</div>
                 </ProfileField>
                 <ProfileField>
                   <label>First Name</label>
-                  <div className="value">{selectedPatient?.firstName || '—'}</div>
+                  <div className="value">{selectedPatient?.personalInfo?.firstName || '—'}</div>
                 </ProfileField>
                 <ProfileField>
                   <label>Middle Name</label>
-                  <div className="value">{selectedPatient?.middleName || '—'}</div>
+                  <div className="value">{selectedPatient?.personalInfo?.middleName || '—'}</div>
                 </ProfileField>
               </ProfileRow>
 
               <ProfileRow>
                 <ProfileField>
                   <label>Date of Birth</label>
-                  <div className="value">{selectedPatient?.birthdate || '—'}</div>
+                  <div className="value">{selectedPatient?.personalInfo?.birthdate || '—'}</div>
                 </ProfileField>
                 <ProfileField>
                   <label>Gender</label>
-                  <div className="value">{selectedPatient?.gender || '—'}</div>
+                  <div className="value">{selectedPatient?.personalInfo?.gender || '—'}</div>
                 </ProfileField>
                 <ProfileField>
                   <label>Civil Status</label>
-                  <div className="value">{selectedPatient?.civilStatus || '—'}</div>
+                  <div className="value">{selectedPatient?.personalInfo?.civilStatus || '—'}</div>
                 </ProfileField>
               </ProfileRow>
               
               <ProfileRow>
                 <ProfileField>
                   <label>Barangay</label>
-                  <div className="value">{selectedPatient?.barangay || '—'}</div>
+                  <div className="value">{selectedPatient?.address?.barangay || '—'}</div>
                 </ProfileField>
                 <ProfileField>
                   <label>Municipality</label>
-                  <div className="value">{selectedPatient?.municipality || '—'}</div>
+                  <div className="value">{selectedPatient?.address?.municipality || '—'}</div>
                 </ProfileField>
                 <ProfileField>
                   <label>Province</label>
-                  <div className="value">{selectedPatient?.province || '—'}</div>
+                  <div className="value">{selectedPatient?.address?.province || '—'}</div>
                 </ProfileField>
                 <ProfileField>
                   <label>Street</label>
-                  <div className="value">{selectedPatient?.street || '—'}</div>
+                  <div className="value">{selectedPatient?.address?.street || '—'}</div>
                 </ProfileField>
                 <ProfileField>
                   <label>Zipcode</label>
-                  <div className="value">{selectedPatient?.zipcode || '—'}</div>
+                  <div className="value">{selectedPatient?.address?.zipcode || '—'}</div>
                 </ProfileField>
               </ProfileRow>
-              
-              
-              
 
               <ProfileSection>
                 <ProfileField>
                   <label>Medical Information</label>
                   <div className="value">
-                    <div>Blood Type: {selectedPatient?.bloodType || '—'}</div>
-                    <div>Height: {selectedPatient?.height ? `${selectedPatient.height} cm` : '—'}</div>
-                    <div>Weight: {selectedPatient?.weight ? `${selectedPatient.weight} kg` : '—'}</div>
+                    <div>Blood Type: {selectedPatient?.medicalInfo?.bloodType || '—'}</div>
+                    <div>Height: {selectedPatient?.medicalInfo?.height ? `${selectedPatient.medicalInfo.height} cm` : '—'}</div>
+                    <div>Weight: {selectedPatient?.medicalInfo?.weight ? `${selectedPatient.medicalInfo.weight} kg` : '—'}</div>
                     <div>BMI: {
-                      selectedPatient?.height && selectedPatient?.weight
-                        ? `${(selectedPatient.weight / Math.pow(selectedPatient.height / 100, 2)).toFixed(1)}`
+                      selectedPatient?.medicalInfo?.height && selectedPatient?.medicalInfo?.weight
+                        ? `${(selectedPatient.medicalInfo.weight / Math.pow(selectedPatient.medicalInfo.height / 100, 2)).toFixed(1)}`
                         : '—'
                     }</div>
                   </div>
@@ -489,15 +532,15 @@ export default function PatientDatabase({ isSidebarOpen, setIsSidebarOpen, setAc
                   <div className="value">
                     <div>
                       <strong>Allergies:</strong><br />
-                      {selectedPatient?.allergies?.length ? selectedPatient.allergies.join(', ') : 'None reported'}
+                      {selectedPatient?.medicalInfo?.allergies?.length ? selectedPatient.medicalInfo.allergies.join(', ') : 'None reported'}
                     </div>
                     <div style={{ marginTop: '10px' }}>
                       <strong>Existing Conditions:</strong><br />
-                      {selectedPatient?.existingConditions?.length ? selectedPatient.existingConditions.join(', ') : 'None reported'}
+                      {selectedPatient?.medicalInfo?.existingConditions?.length ? selectedPatient.medicalInfo.existingConditions.join(', ') : 'None reported'}
                     </div>
                     <div style={{ marginTop: '10px' }}>
                       <strong>Current Medications:</strong><br />
-                      {selectedPatient?.medications?.length ? selectedPatient.medications.join(', ') : 'None reported'}
+                      {selectedPatient?.medicalInfo?.medications?.length ? selectedPatient.medicalInfo.medications.join(', ') : 'None reported'}
                     </div>
                   </div>
                 </ProfileField>

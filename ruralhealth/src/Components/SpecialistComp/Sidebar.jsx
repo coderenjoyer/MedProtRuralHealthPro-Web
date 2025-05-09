@@ -73,7 +73,7 @@ const LogoContainer = styled.div`
 const LogoText = styled.div`
   font-size: 1.25rem;
   font-weight: 600;
-  color: white;
+  color: black;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -82,7 +82,7 @@ const LogoText = styled.div`
 const EditButton = styled.button`
   background: none;
   border: none;
-  color: white;
+  color: black;
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
@@ -98,9 +98,9 @@ const EditButton = styled.button`
 
 const NameInput = styled.input`
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.3);
   border-radius: 4px;
-  color: white;
+  color: black;
   padding: 0.25rem 0.5rem;
   font-size: 1.25rem;
   font-weight: 600;
@@ -109,7 +109,7 @@ const NameInput = styled.input`
 
   &:focus {
     outline: none;
-    border-color: rgba(255, 255, 255, 0.5);
+    border-color: rgba(0, 0, 0, 0.5);
   }
 `;
 
@@ -122,7 +122,7 @@ const ActionButtons = styled.div`
 const ActionButton = styled.button`
   background: none;
   border: none;
-  color: white;
+  color: black;
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
@@ -152,7 +152,7 @@ const SidebarButton = styled.button`
   width: 100%;
   border: none;
   background: ${({ isActive }) => isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent'};
-  color: white;
+  color: black;
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -163,6 +163,7 @@ const SidebarButton = styled.button`
   span {
     font-size: 0.875rem;
     font-weight: 500;
+    color: black;
   }
 `;
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import styled from "styled-components"
 import { motion } from "framer-motion"
-import { ref, onValue, push, update } from 'firebase/database';
+import { ref, onValue, push, update, get } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -493,36 +493,31 @@ const DentalExamination = ({ selectedPatient: propSelectedPatient, isSidebarOpen
     );
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleClear = () => {
-  // Show confirmation dialog
-  const confirmClear = window.confirm("Are you sure you want to clear the editable fields? This action cannot be undone.");
-  if (!confirmClear) {
-    return; // Exit if the user cancels
-  }
-
-  if (!selectedPatient) {
-    toast.error("No patient selected to clear the form");
-    return;
-  }
-
-  // Reset only the editable fields
-  setFormData((prev) => ({
-    ...prev,
-    previousIssues: "",
-    presentIssues: "",
-    medications: "",
-    teethCondition: "Good",
-    gums: "Healthy",
-    treatment: "",
-  }));
-
-  toast.success("Editable fields cleared successfully");
-};
+   const handleClear = () => {
+    // Show confirmation dialog
+    const confirmClear = window.confirm("Are you sure you want to clear the editable fields? This action cannot be undone.");
+    if (!confirmClear) {
+      return; // Exit if the user cancels
+    }
+  
+    if (!selectedPatient) {
+      toast.error("No patient selected to clear the form");
+      return;
+    }
+  
+    // Reset only the editable fields
+    setFormData((prev) => ({
+      ...prev,
+      previousIssues: "",
+      presentIssues: "",
+      medications: "",
+      teethCondition: "Good",
+      gums: "Healthy",
+      treatment: "",
+    }));
+  
+    toast.success("Editable fields cleared successfully");
+  };
 
 const handleSubmit = async (e) => {
   e.preventDefault();

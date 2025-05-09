@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import { ChevronDown, ChevronUp, Search } from 'lucide-react';
-import { ref, onValue, push, update, remove, get } from 'firebase/database';
+import { ref, onValue, push, update, remove, get, set } from 'firebase/database';
 import { database } from '../../Firebase/firebase';
 import { toast } from 'react-toastify';
 import 'react-calendar/dist/Calendar.css';
 import styled from 'styled-components';
+import emailjs from '@emailjs/browser';
+import { EMAIL_CONFIG } from '../../config/emailConfig';
 
 const SearchResultsContainer = styled.div`
     max-height: 300px;
@@ -179,7 +181,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         return () => unsubscribe();
     }, []);
 
-    // Handle patient selection
+    
     const handlePatientSelect = (patient) => {
         if (currentPatient?.id === patient.id) {
             setLocalSelectedPatient(null);
@@ -198,8 +200,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
             }
         }
     };
-
-    // Load patient data when selected
+ 
     useEffect(() => {
         const patient = localSelectedPatient || selectedPatient;
         if (patient) {
@@ -217,7 +218,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         }
     }, [localSelectedPatient, selectedPatient]);
 
-    // Load appointments from Firebase
+  
     useEffect(() => {
         const patient = localSelectedPatient || selectedPatient;
         if (patient) {
@@ -225,24 +226,18 @@ function Appointments({ selectedPatient, onPatientSelect }) {
             const unsubscribe = onValue(appointmentsRef, async (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    const appointmentsList = Object.entries(data).map(([id, appointment]) => ({
-                        id,
-                        ...appointment,
-                    }));
-                    // Sort appointments by date and time
-                    const sortedAppointments = appointmentsList.sort((a, b) => {
-                        const dateA = new Date(`${a.appointmentDate}T${a.appointmentTime}`);
-                        const dateB = new Date(`${b.appointmentDate}T${b.appointmentTime}`);
-                        return dateA - dateB;
-                    });
-                    setAppointments(sortedAppointments);
+                    // Since we're now storing a single appointment, convert it to array format
+                    const appointment = {
+                        id: 'current',
+                        ...data
+                    };
+                    setAppointments([appointment]);
                     
-                    // Schedule reminder emails for upcoming appointments
-                    const upcomingAppointments = sortedAppointments.filter(appointment => {
-                        const appointmentDate = new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`);
-                        return appointmentDate > new Date() && appointment.status !== 'cancelled';
-                    });
-                    await scheduleReminderEmails(upcomingAppointments);
+                    // Schedule reminder email for the appointment
+                    const appointmentDate = new Date(`${data.appointmentDate}T${data.appointmentTime}`);
+                    if (appointmentDate > new Date() && data.status !== 'cancelled') {
+                        await scheduleReminderEmails([appointment]);
+                    }
                 } else {
                     setAppointments([]);
                 }
@@ -279,10 +274,55 @@ function Appointments({ selectedPatient, onPatientSelect }) {
           if (!formData.appointmentDate || !formData.appointmentTime || !formData.description) {
             toast.error("Please fill out all required fields (date, time, and description)");
             return;
+        }
+
+        // Create confirmation message
+        const confirmationMessage = `
+Please confirm the following appointment details:
+
+Patient Information:
+------------------
+Name: ${formData.lastName}, ${formData.firstName} ${formData.middleName}
+Email: ${formData.email || 'Not provided'}
+
+Appointment Details:
+------------------
+Date: ${formData.appointmentDate}
+Time: ${formData.appointmentTime}
+Description: ${formData.description || 'No description provided'}
+
+Do you want to proceed with scheduling this appointment?`;
+
+        // Show confirmation dialog
+        const isConfirmed = window.confirm(confirmationMessage);
+        if (!isConfirmed) {
+            return;
+        }
+
+        try {
           }
         
           try {
             const appointmentsRef = ref(database, `rhp/patients/${currentPatient.id}/appointments`);
+            const appointmentData = {
+                patientId: currentPatient.id,
+                patientNumber: currentPatient.registrationInfo?.registrationNumber || 'N/A',
+                patientName: `${currentPatient.personalInfo.firstName} ${currentPatient.personalInfo.lastName}`,
+                contactInfo: {
+                    phoneNumber: currentPatient.contactInfo?.phoneNumber || currentPatient.contactInfo?.contactNumber || 'N/A',
+                    contactNumber: currentPatient.contactInfo?.contactNumber || currentPatient.contactInfo?.phoneNumber || 'N/A',
+                    email: currentPatient.contactInfo?.email || 'N/A'
+                },
+                appointmentDate: formData.appointmentDate,
+                appointmentTime: formData.appointmentTime,
+                description: formData.description,
+                createdAt: new Date().toISOString(),
+                status: 'pending'
+            };
+
+            await set(appointmentsRef, appointmentData);
+            console.log('Appointment set in database');
+            
             const newAppointmentRef = push(appointmentsRef);
         
             // Save the appointment to Firebase
@@ -299,6 +339,36 @@ function Appointments({ selectedPatient, onPatientSelect }) {
             // Update the patient's last visit
             const patientRef = ref(database, `rhp/patients/${currentPatient.id}`);
             await update(patientRef, {
+                'registrationInfo.lastVisit': new Date().toISOString(),
+                'registrationInfo.nextAppointment': `${formData.appointmentDate}T${formData.appointmentTime}`
+            });
+            console.log('Patient info updated in database');
+
+            toast.success("Appointment scheduled successfully!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+            try {
+                handleClear();
+            } catch (clearError) {
+                console.error('Error in handleClear:', clearError);
+            }
+        } catch (error) {
+            console.error("Error in handleSubmit:", error);
+            toast.error("Failed to schedule appointment. Please try again.", {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+        }
+    };
               'registrationInfo.lastVisit': new Date().toISOString(),
             });
         
@@ -319,16 +389,143 @@ function Appointments({ selectedPatient, onPatientSelect }) {
         }));
     };
 
-    const handleCancelAppointment = async (appointmentId) => {
+    const sendCancellationEmail = async (appointment, patient) => {
+        try {
+            // Check if patient has email
+            if (!patient.contactInfo?.email) {
+                throw new Error('Patient does not have an email address');
+            }
+
+            // Create a cancellation record in Firebase for tracking
+            const cancellationRef = ref(database, 'rhp/appointmentCancellations');
+            const cancellationData = {
+                patientId: patient.id,
+                patientEmail: patient.contactInfo.email,
+                patientName: `${patient.personalInfo?.firstName} ${patient.personalInfo?.lastName}`,
+                appointmentDate: appointment.appointmentDate,
+                appointmentTime: appointment.appointmentTime,
+                description: appointment.description || 'No specific description provided',
+                cancelledAt: new Date().toISOString(),
+                status: 'pending' // This will trigger the Firebase Cloud Function
+            };
+
+            // Push the cancellation record to Firebase
+            const newCancellationRef = await push(cancellationRef, cancellationData);
+
+            // Set up a listener for the cancellation status
+            const unsubscribe = onValue(newCancellationRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    if (data.status === 'sent') {
+                        toast.success('Cancellation email sent successfully', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                        });
+                        unsubscribe(); // Remove the listener once email is sent
+                    } else if (data.status === 'failed') {
+                        toast.error(`Failed to send cancellation email: ${data.error || 'Unknown error'}`, {
+                            position: "top-right",
+                            autoClose: 5000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                        });
+                        unsubscribe(); // Remove the listener if email fails
+                    }
+                }
+            });
+
+            console.log('Cancellation email request sent successfully');
+            toast.info('Sending cancellation email...', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+        } catch (error) {
+            console.error('Error sending cancellation email:', error);
+            toast.error(error.message || 'Failed to send cancellation email', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+        }
+    };
+
+    const handleCancelAppointment = async () => {
         try {
             const patient = localSelectedPatient || selectedPatient;
-            if (!patient) throw new Error("No patient selected");
-            const appointmentRef = ref(database, `rhp/patients/${patient.id}/appointments/${appointmentId}`);
-            await remove(appointmentRef);
-            toast.success("Appointment cancelled successfully");
+            if (!patient) {
+                toast.error("No patient selected", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+                return;
+            }
+            
+            // Get current appointment before cancelling
+            const appointmentsRef = ref(database, `rhp/patients/${patient.id}/appointments`);
+            const appointmentSnapshot = await get(appointmentsRef);
+            const currentAppointment = appointmentSnapshot.val();
+            
+            if (!currentAppointment) {
+                toast.error("No appointment found to cancel", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+                return;
+            }
+
+            // Set appointments to null when cancelled
+            await set(appointmentsRef, null);
+            
+            // Update patient's next appointment to null
+            const patientRef = ref(database, `rhp/patients/${patient.id}`);
+            await update(patientRef, {
+                'registrationInfo.nextAppointment': null
+            });
+
+            // Send cancellation email if there was an appointment
+            if (currentAppointment && patient.contactInfo?.email) {
+                await sendCancellationEmail(currentAppointment, patient);
+            }
+            
+            toast.success("Appointment cancelled successfully!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
         } catch (error) {
             console.error("Error cancelling appointment:", error);
-            toast.error("Failed to cancel appointment");
+            toast.error("Failed to cancel appointment. Please try again.", {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
         }
     };
 
@@ -440,7 +637,11 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                     <label>Contact Number</label>
                                     <input 
                                         type="text" 
-                                        value={currentPatient.contactInfo?.phoneNumber || 'N/A'} 
+                                        value={
+                                            currentPatient.contactInfo?.phoneNumber ||
+                                            currentPatient.contactInfo?.contactNumber ||
+                                            'N/A'
+                                        }
                                         disabled 
                                     />
                                 </PatientInfoItem>
@@ -517,7 +718,31 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                 </button>
                                 <button 
                                     className="btn confirm-btn" 
-                                    onClick={handleSubmit}
+                                    onClick={() => {
+                                        if (!currentPatient) {
+                                            toast.error("Please select a patient first", {
+                                                position: "top-right",
+                                                autoClose: 3000,
+                                                hideProgressBar: false,
+                                                closeOnClick: true,
+                                                pauseOnHover: true,
+                                                draggable: true,
+                                            });
+                                            return;
+                                        }
+                                        if (!formData.appointmentDate || !formData.appointmentTime) {
+                                            toast.error("Please select both date and time for the appointment", {
+                                                position: "top-right",
+                                                autoClose: 3000,
+                                                hideProgressBar: false,
+                                                closeOnClick: true,
+                                                pauseOnHover: true,
+                                                draggable: true,
+                                            });
+                                            return;
+                                        }
+                                        handleSubmit();
+                                    }}
                                     disabled={!currentPatient}
                                     style={{ color: '#000000' }}
                                 >
@@ -583,6 +808,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                         <AppointmentsTable>
                             <thead>
                                 <tr>
+                                    <th style={{ color: '#000000' }}>Patient No.</th>
                                     <th style={{ color: '#000000' }}>Date</th>
                                     <th style={{ color: '#000000' }}>Time</th>
                                     <th style={{ color: '#000000' }}>Patient Name</th>
@@ -594,6 +820,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                             <tbody>
                                 {getUpcomingAppointments().map((appointment) => (
                                     <tr key={appointment.id}>
+                                        <td style={{ color: '#000000' }}>{appointment.patientNumber || 'N/A'}</td>
                                         <td style={{ color: '#000000' }}>{formatDate(appointment.appointmentDate)}</td>
                                         <td style={{ color: '#000000' }}>{formatTime(appointment.appointmentTime)}</td>
                                         <td style={{ color: '#000000' }}>{appointment.patientName || 'N/A'}</td>
@@ -622,7 +849,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                                 </button>
                                                 <button 
                                                     className="cancel-btn"
-                                                    onClick={() => handleCancelAppointment(appointment.id)}
+                                                    onClick={handleCancelAppointment}
                                                     style={{ color: '#000000' }}
                                                 >
                                                     Cancel
@@ -633,7 +860,7 @@ function Appointments({ selectedPatient, onPatientSelect }) {
                                 ))}
                                 {getUpcomingAppointments().length === 0 && (
                                     <tr>
-                                        <td colSpan="6" style={{ textAlign: 'center', color: '#000000' }}>
+                                        <td colSpan="7" style={{ textAlign: 'center', color: '#000000' }}>
                                             No upcoming appointments found
                                         </td>
                                     </tr>
